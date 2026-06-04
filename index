@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="https://www.bitkub.com/favicon.ico">
+  <style>@import url('https://fonts.cdnfonts.com/css/sf-pro-display');</style>
+  
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-main: #F5F5F7; 
+      --bg-card: #FFFFFF; 
+      --text-main: #1D1D1F; 
+      --text-muted: #86868B; 
+      --border-color: rgba(0, 0, 0, 0.08);
+      --btn-primary: #007AFF;
+      --btn-hover: #005bb5;
+    }
+    
+    body.dark-theme-mode {
+      --bg-main: #000000; 
+      --bg-card: #1C1C1E; 
+      --text-main: #F5F5F7; 
+      --text-muted: #98989D; 
+      --border-color: rgba(255, 255, 255, 0.12);
+      --btn-primary: #0A84FF;
+      --btn-hover: #0066cc;
+    }
+    
+    body { background-color: var(--bg-main); color: var(--text-main); transition: background-color 0.3s ease, color 0.3s ease; font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    
+    .glass-panel { background: var(--bg-card); backdrop-filter: saturate(180%) blur(24px); -webkit-backdrop-filter: saturate(180%) blur(24px); border: 1px solid var(--border-color); border-radius: 18px; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04); transition: all 0.3s ease; }
+    body.dark-theme-mode .glass-panel { box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4); }
+    
+    .text-muted-style { color: var(--text-muted); }
+    .btn-bitkub { background-color: #00B976; color: #ffffff; border: none; }
+    .btn-bitkub:hover { background-color: #009a62; }
+
+    .apple-input { background-color: rgba(0,0,0,0.04) !important; border: 1px solid transparent !important; color: var(--text-main) !important; border-radius: 10px; font-size: 14px; transition: all 0.2s ease; padding: 8px 12px; }
+    body.dark-theme-mode .apple-input { background-color: rgba(255,255,255,0.08) !important; border: 1px solid rgba(255,255,255,0.05) !important; }
+    .apple-input:focus { background-color: var(--bg-card) !important; border-color: #007AFF !important; box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2) !important; outline: none; }
+    
+    table { border-collapse: separate; border-spacing: 0; }
+    th { color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--border-color); }
+    td { border-bottom: 1px solid var(--border-color); }
+    
+    tr.row-hover:hover td { background-color: rgba(0, 122, 255, 0.04); }
+    body.dark-theme-mode tr.row-hover:hover td { background-color: rgba(255, 255, 255, 0.05); }
+    
+    .sla-pulse { animation: pulse-red 2s infinite; }
+    @keyframes pulse-red { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 99px; }
+    body.dark-theme-mode ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); }
+    
+    .view-transition { opacity: 0; transform: translateY(12px); transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    .view-visible { opacity: 1; transform: translateY(0); }
+    .fade-in-scale { animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    .range-bar { transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    .badge-opskyc { background-color: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .badge-oper { background-color: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+    .badge-vkyc { background-color: #f3e8ff; color: #6b21a8; border-color: #e9d5ff; }
+    .badge-over { background-color: #f0fdfa; color: #0f766e; border-color: #99f6e4; }
+    .badge-opsmule { background-color: #efebe9; color: #4e342e; border-color: #d7ccc8; } 
+    
+    body.dark-theme-mode .badge-opskyc { background-color: rgba(30, 58, 138, 0.3); color: #60a5fa; border-color: rgba(30, 58, 138, 0.5); }
+    body.dark-theme-mode .badge-oper { background-color: rgba(124, 45, 18, 0.3); color: #fb923c; border-color: rgba(124, 45, 18, 0.5); }
+    body.dark-theme-mode .badge-vkyc { background-color: rgba(88, 28, 135, 0.3); color: #c084fc; border-color: rgba(88, 28, 135, 0.5); }
+    body.dark-theme-mode .badge-over { background-color: rgba(19, 78, 74, 0.3); color: #2dd4bf; border-color: rgba(19, 78, 74, 0.5); }
+    body.dark-theme-mode .badge-opsmule { background-color: rgba(78, 52, 46, 0.3); color: #bcaaa4; border-color: rgba(78, 52, 46, 0.5); } 
+
+    .bar-opskyc { background-color: #3b82f6 !important; }
+    .bar-oper { background-color: #f97316 !important; }
+    .bar-vkyc { background-color: #a855f7 !important; }
+    .bar-over { background-color: #14b8a6 !important; }
+    .bar-opsmule { background-color: #8d6e63 !important; } 
+
+    .lang-th { background-color: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+    .lang-en { background-color: #eff6ff; color: #1e3a8a; border-color: #bfdbfe; }
+    .lang-int { background-color: #fffbeb; color: #854d0e; border-color: #fde68a; }
+    
+    body.dark-theme-mode .lang-th { background-color: rgba(20, 83, 45, 0.3); color: #4ade80; border-color: rgba(20, 83, 45, 0.5); }
+    body.dark-theme-mode .lang-en { background-color: rgba(30, 58, 138, 0.3); color: #60a5fa; border-color: rgba(30, 58, 138, 0.5); }
+    body.dark-theme-mode .lang-int { background-color: rgba(113, 63, 18, 0.3); color: #facc15; border-color: rgba(113, 63, 18, 0.5); }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body class="min-h-screen antialiased p-4 lg:p-6">
+
+  <div id="loading-screen" style="position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background-color: var(--bg-main); z-index: 9999;">
+    <div class="text-center fade-in-scale" style="text-align: center;">
+      <div class="btn-bitkub" style="width: 48px; height: 48px; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+        <i class="fa-solid fa-shield-halved" style="color: white; font-size: 20px;"></i>
+      </div>
+      <div style="font-size: 14px; font-weight: 600; color: #8E8E93;">Authorizing Access...</div>
+    </div>
+  </div>
+
+  <div id="main-app-shell" class="hidden w-full mx-auto fade-in">
+    
+    <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 pb-5 border-b border-gray-200 dark:border-gray-800">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 btn-bitkub rounded-xl flex items-center justify-center text-white shadow-sm"><i class="fa-solid fa-shield-halved text-lg"></i></div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight leading-tight">EDD Command Center</h1>
+          <p class="text-xs text-muted-style mt-0.5">Unified Operations Command · Role-Based Access · Live BI Analytics</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 glass-panel px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm">
+          <div class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
+          <span class="text-muted-style">System Live</span>
+        </div>
+        <button onclick="toggleAppThemeMode()" class="w-10 h-10 glass-panel rounded-xl flex items-center justify-center hover:opacity-80 transition shadow-sm focus:outline-none"><i id="theme-toggle-icon" class="fa-solid fa-moon text-base text-yellow-500"></i></button>
+        <div class="flex flex-col text-right text-xs text-muted-style font-medium glass-panel p-2 px-3.5 rounded-xl shadow-sm">
+          <div>User: <span id="user-display-email" class="text-blue-500 font-semibold">-</span></div>
+          <div>Role: <span id="user-display-role" class="font-semibold text-gray-500 dark:text-gray-400">-</span> · <span class="text-[10px] opacity-60"><span id="liveTime">-</span></span></div>
+        </div>
+      </div>
+    </header>
+
+    <div class="flex mb-5 gap-2 overflow-x-auto px-1 pb-1">
+      <button onclick="switchTab('daily')" id="tab-btn-daily" class="px-5 py-2.5 bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400 font-semibold text-sm rounded-xl whitespace-nowrap focus:outline-none transition-all shadow-sm">Daily Operations</button>
+      <button onclick="switchTab('range')" id="tab-btn-range" class="px-5 py-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium text-sm rounded-xl whitespace-nowrap focus:outline-none transition-all">Range Analytics</button>
+      <button onclick="switchTab('admin')" id="tab-btn-admin" class="hidden px-5 py-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium text-sm rounded-xl whitespace-nowrap focus:outline-none transition-all">Team &amp; Access Settings</button>
+    </div>
+
+    <div id="tab-content-container" class="view-transition view-visible">
+      
+      <div id="main-filter-panel" class="glass-panel p-5 mb-5 flex flex-col lg:flex-row gap-4 items-end justify-between rounded-2xl">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 w-full">
+          <div><label id="date-label-text" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Target Date</label><input type="date" id="datePicker" autocomplete="off" class="w-full apple-input" onchange="forceSyncAndFetch()"></div>
+          <div id="end-date-container" class="hidden"><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">End Date</label><input type="date" id="endDatePicker" autocomplete="off" class="w-full apple-input" onchange="forceSyncAndFetch()"></div>
+          <div class="relative"><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Search</label><i class="fa-solid fa-magnifying-glass absolute left-3 top-[38px] text-gray-400 text-xs"></i><input type="text" id="searchFilter" autocomplete="off" placeholder="Email, UID, Title..." class="w-full pl-8 apple-input" oninput="applyFilters()"></div>
+          <div><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">EDD Type</label><input type="text" id="eddTypeFilter" autocomplete="off" placeholder="Filter Type..." class="w-full apple-input" oninput="applyFilters()"></div>
+          <div><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Status</label>
+            <select id="statusFilter" autocomplete="off" class="w-full apple-input" onchange="applyFilters()">
+              <option value="">All Statuses</option>
+              <option value="Need check">Need check</option>
+              <option value="EDD Not done">EDD Not done</option>
+              <option value="EDD Done">EDD Done</option>
+              <option value="Cancelled">Cancelled</option>
+              <option value="Transferred">Transferred</option>
+              <option value="Blocked slot">Blocked slot</option>
+            </select>
+          </div>
+          <div><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Officer</label><select id="officerFilter" autocomplete="off" class="w-full apple-input" onchange="applyFilters()"><option value="">All Officers</option></select></div>
+        </div>
+        <div class="flex gap-2 w-full lg:w-auto justify-end flex-wrap">
+          <button id="refresh-btn" onclick="forceSyncAndFetch()" class="px-4 py-2.5 btn-bitkub rounded-xl text-sm font-semibold shadow-sm focus:outline-none transition"><i class="fa-solid fa-arrows-rotate mr-1.5"></i> <span>Refresh</span></button>
+          <button onclick="resetFilters()" class="px-4 py-2.5 bg-gray-200 text-gray-700 dark:bg-gray-800 dark:text-gray-300 rounded-xl text-sm font-semibold focus:outline-none transition hover:bg-gray-300 dark:hover:bg-gray-700"><i class="fa-solid fa-arrow-rotate-left mr-1.5"></i> Reset</button>
+          <button onclick="exportToCSV()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-sm focus:outline-none transition"><i class="fa-solid fa-file-excel mr-1.5"></i> Export CSV</button>
+        </div>
+      </div>
+
+      <div id="queue-filter-panel" class="glass-panel p-3 mb-5 flex flex-wrap items-center gap-2 rounded-2xl">
+        <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 mr-2"><i class="fa-solid fa-filter text-[10px] mr-1"></i> Queue Filter:</span>
+        <button onclick="toggleOwnerFilter('all')" id="tab-all" class="px-4 py-1.5 text-xs font-semibold rounded-full bg-blue-600 text-white shadow-sm focus:outline-none transition border border-transparent">All Calendars</button>
+        <button onclick="toggleOwnerFilter('opskyc')" id="tab-opskyc" class="px-4 py-1.5 text-xs font-semibold rounded-full border border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900 focus:outline-none transition">opskyc (KYC Risk)</button>
+        <button onclick="toggleOwnerFilter('operationkyc')" id="tab-operationkyc" class="px-4 py-1.5 text-xs font-semibold rounded-full border border-orange-200 text-orange-600 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-900 focus:outline-none transition">operationkyc (KYC)</button>
+        <button onclick="toggleOwnerFilter('verification-kyc')" id="tab-verification-kyc" class="px-4 py-1.5 text-xs font-semibold rounded-full border border-purple-200 text-purple-600 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-400 dark:hover:bg-purple-900 focus:outline-none transition">verification-kyc (Mule)</button>
+        <button onclick="toggleOwnerFilter('opsverification')" id="tab-opsverification" class="px-4 py-1.5 text-xs font-semibold rounded-full border border-teal-200 text-teal-600 hover:bg-teal-50 dark:border-teal-800 dark:text-teal-400 dark:hover:bg-teal-900 focus:outline-none transition">opsverification (OPS)</button>
+        <button onclick="toggleOwnerFilter('opsmule')" id="tab-opsmule" class="px-4 py-1.5 text-xs font-semibold rounded-full border border-stone-200 text-stone-600 hover:bg-stone-50 dark:border-stone-800 dark:text-stone-400 dark:hover:bg-stone-900 focus:outline-none transition">opsmule (OPS Mule)</button>
+        <span class="ml-auto text-xs font-semibold text-blue-700 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 px-3 py-1 rounded-full border border-blue-100 dark:border-blue-800/50" id="record-count-badge">0 records</span>
+      </div>
+
+      <div id="daily-kpi-panel" class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5" style="display: grid;">
+        <div class="glass-panel p-5 rounded-2xl">
+          <div class="flex justify-between items-center mb-4">
+            <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">1. Root-Cause (EDD Type)</span>
+            <span class="text-[11px] bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-400 px-2.5 py-1 rounded-lg font-semibold border border-purple-200 dark:border-purple-800" id="insight-total-cases">0 Cases</span>
+          </div>
+          <div class="space-y-3 overflow-y-auto max-h-40 pr-1 text-sm" id="edd-type-chart-container"></div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl">
+          <div class="flex justify-between items-center mb-4">
+            <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">2. Team Workload Split</span>
+            <span class="text-[11px] text-blue-500 font-semibold uppercase tracking-wide">Utilization %</span>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <div class="flex justify-between text-sm font-medium mb-1.5"><span>opskyc (KYC Risk)</span><span id="txt-u-opskyc" class="font-semibold text-gray-400">0%</span></div>
+              <div class="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full overflow-hidden"><div id="bar-u-opskyc" class="bar-opskyc h-full range-bar" style="width:0%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm font-medium mb-1.5"><span>operationkyc (KYC)</span><span id="txt-u-oper" class="font-semibold text-gray-400">0%</span></div>
+              <div class="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full overflow-hidden"><div id="bar-u-oper" class="bar-oper h-full range-bar" style="width:0%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm font-medium mb-1.5"><span>verification-kyc (Mule)</span><span id="txt-u-vkyc" class="font-semibold text-gray-400">0%</span></div>
+              <div class="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full overflow-hidden"><div id="bar-u-vkyc" class="bar-vkyc h-full range-bar" style="width:0%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm font-medium mb-1.5"><span>opsverification (OPS)</span><span id="txt-u-over" class="font-semibold text-gray-400">0%</span></div>
+              <div class="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full overflow-hidden"><div id="bar-u-over" class="bar-over h-full range-bar" style="width:0%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm font-medium mb-1.5"><span>opsmule (OPS Mule)</span><span id="txt-u-opsmule" class="font-semibold text-gray-400">0%</span></div>
+              <div class="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full overflow-hidden"><div id="bar-u-opsmule" class="bar-opsmule h-full range-bar" style="width:0%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-panel p-5 flex flex-col justify-between rounded-2xl">
+          <div class="flex justify-between items-center mb-4">
+            <span class="text-[11px] font-semibold text-green-600 dark:text-green-500 uppercase tracking-wide">3. Live Quality Metrics</span>
+            <span class="text-[11px] text-green-600 dark:text-green-500 font-semibold uppercase tracking-wide" id="txt-done-percent">Done: 0%</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl text-center border border-gray-100 dark:border-gray-700">
+              <span class="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Thai Volume</span>
+              <h4 class="text-3xl font-light tracking-tight mt-1" id="insight-lang-th">0</h4>
+            </div>
+            <div class="bg-blue-50 dark:bg-blue-900 p-3 rounded-xl text-center border border-blue-100 dark:border-blue-800">
+              <span class="text-[10px] font-medium text-blue-500 uppercase tracking-wider">Interpreter</span>
+              <h4 class="text-3xl font-light tracking-tight text-blue-500 mt-1" id="insight-lang-en">0</h4>
+            </div>
+            <div class="bg-green-50 dark:bg-green-900 p-3 rounded-xl text-center border border-green-100 dark:border-green-800">
+              <span class="text-[10px] font-medium text-green-600 uppercase tracking-wider">EDD Done</span>
+              <h4 class="text-3xl font-light tracking-tight text-green-600 mt-1" id="kpi-done">0</h4>
+            </div>
+            <div class="bg-red-50 dark:bg-red-900 p-3 rounded-xl text-center border border-red-100 dark:border-red-800">
+              <span class="text-[10px] font-medium text-red-500 uppercase tracking-wider">Not Done</span>
+              <h4 class="text-3xl font-light tracking-tight text-red-500 mt-1" id="kpi-notdone">0</h4>
+            </div>
+          </div>
+          <div class="bg-red-50 dark:bg-red-900 border border-red-100 dark:border-red-800 p-3 rounded-xl flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-clock text-red-500 text-sm sla-pulse"></i>
+              <span class="text-sm font-semibold text-red-600">SLA Required:</span>
+            </div>
+            <span class="text-sm font-bold text-red-600 bg-white dark:bg-gray-900 border border-red-100 dark:border-red-800 px-3 py-1 rounded-lg" id="insight-sla-pending">0 Items</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="range-stats-panel" class="glass-panel p-8 mb-5 rounded-2xl" style="display: none;">
+        <h3 class="text-lg font-semibold mb-6 text-gray-700 dark:text-gray-300"><i class="fa-solid fa-chart-pie text-blue-500 mr-2"></i>Range Summary Analytics</h3>
+        <div id="range-analytics-content" class="text-base text-gray-400 text-center py-8">Select date range and refresh</div>
+      </div>
+
+      <div id="main-table-panel" class="glass-panel overflow-hidden rounded-2xl">
+        <div class="overflow-x-auto">
+          <table class="w-full table-fixed text-left min-w-[950px]">
+            <thead>
+              <tr>
+                <th class="p-4" style="width: 12%;">Date / Time</th>
+                <th class="p-4" style="width: 22%;">
+                  <div class="flex items-center justify-between">
+                    <span>UID / Customer Info</span>
+                    <button onclick="toggleEmailMasking()" class="text-gray-400 hover:text-blue-500 transition" title="Toggle Privacy Masking"><i id="mask-icon" class="fa-solid fa-eye-slash"></i></button>
+                  </div>
+                </th>
+                <th class="p-4" style="width: 20%;">Type / Status</th>
+                <th class="p-4" style="width: 14%;">Meeting / Owner</th>
+                <th class="p-4" style="width: 12%;">Officer</th>
+                <th class="p-4" style="width: 12%;">Note Update</th>
+                <th class="p-4 text-center" style="width: 8%;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody" class="text-sm">
+              <tr>
+                <td colspan="7" class="p-16 text-center text-gray-400">
+                  <i class="fa-solid fa-spinner fa-spin text-3xl mb-4 text-blue-500 block"></i>
+                  <p class="text-base font-medium">Loading live secure records Matrix...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="admin-view" class="hidden">
+        <div class="max-w-4xl mx-auto glass-panel p-8 rounded-2xl">
+          <div class="border-b border-gray-200 dark:border-gray-800 pb-4 mb-6">
+            <h2 class="text-lg font-semibold inline-flex items-center gap-2"><i class="fa-solid fa-users-gear text-blue-500"></i> Team &amp; Access Governance</h2>
+            <p class="text-sm text-muted-style mt-1">Register staff emails, roles, and restrict execution scopes securely. Data syncs directly to the 'Team_Access' Google Sheet.</p>
+          </div>
+          <div class="flex flex-col gap-4 bg-gray-50 dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 mb-6">
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 uppercase mb-2 tracking-wider">Employee Emails (comma, space, or line separated)</label>
+              <textarea id="new-team-emails" autocomplete="off" rows="3" placeholder="user@bitkub.com" class="w-full apple-input"></textarea>
+            </div>
+            <div class="flex flex-col sm:flex-row justify-between items-end gap-4">
+              <div class="w-full sm:w-1/2">
+                <label class="block text-xs font-semibold text-gray-500 uppercase mb-2 tracking-wider">Roster Role</label>
+                <select id="new-team-role" autocomplete="off" class="w-full apple-input">
+                  <option value="Staff">Staff</option>
+                  <option value="Admin">Admin</option>
+                  <option value="Viewer">Viewer</option>
+                </select>
+              </div>
+              <div class="w-full sm:w-1/2">
+                <label class="block text-xs font-semibold text-gray-500 uppercase mb-2 tracking-wider">Queue Scope Boundary</label>
+                <select id="new-team-queue" autocomplete="off" class="w-full apple-input">
+                  <option value="all">All Channels</option>
+                  <option value="opskyc">opskyc (KYC Risk)</option>
+                  <option value="operationkyc">operationkyc (KYC)</option>
+                  <option value="verification-kyc">verification-kyc (Mule)</option>
+                  <option value="opsverification">opsverification (OPS)</option>
+                  <option value="opsmule">opsmule (OPS Mule)</option> 
+                </select>
+              </div>
+              <button onclick="addTeamMemberRow()" class="w-full sm:w-auto px-6 py-2.5 btn-bitkub rounded-xl shadow-sm transition inline-flex items-center justify-center gap-2 font-semibold text-sm"><i class="fa-solid fa-plus text-xs"></i> Add</button>
+            </div>
+          </div>
+          <div class="border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden bg-white/50 dark:bg-gray-900/50">
+            <table class="w-full table-fixed text-left text-sm border-collapse">
+              <thead>
+                <tr class="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-800">
+                  <th class="p-4 w-[45%] border-r border-gray-200 dark:border-gray-800">Email</th>
+                  <th class="p-4 w-[20%] border-r border-gray-200 dark:border-gray-800">Role</th>
+                  <th class="p-4 w-[25%] border-r border-gray-200 dark:border-gray-800">Queue Scope</th>
+                  <th class="p-4 text-center" style="width: 10%;">Del</th>
+                </tr>
+              </thead>
+              <tbody id="adminTeamTableBody" class="divide-y divide-gray-200 dark:divide-gray-800 text-sm"></tbody>
+            </table>
+          </div>
+          <div class="mt-6 flex justify-end gap-3 border-t border-gray-200 dark:border-gray-800 pt-5">
+            <button onclick="saveAdminConsole()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm transition inline-flex items-center justify-center gap-2 font-semibold text-sm"><i class="fa-solid fa-shield-check"></i> Save &amp; Sync to Database</button>
+          </div>
+        </div>
+      </div>
+
+    </div> 
+
+    <div id="transferModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50 p-4 transition-opacity" style="backdrop-filter:blur(8px)">
+      <div class="glass-panel p-6 max-w-sm w-full fade-in-scale">
+        <div class="flex items-center gap-4 border-b border-gray-200 dark:border-gray-800 pb-4 mb-5">
+          <div class="w-12 h-12 bg-purple-600 text-white rounded-xl flex items-center justify-center text-lg shadow-sm"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>
+          <div>
+            <h3 class="text-base font-bold">Inter-Calendar Delegation</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Route slot to an alternative team.</p>
+          </div>
+        </div>
+        <input type="hidden" id="tx-event-id"><input type="hidden" id="tx-source-owner">
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Destination Queue</label>
+            <select id="tx-target-owner" autocomplete="off" class="w-full apple-input">
+              <option value="opskyc">opskyc (KYC Risk)</option>
+              <option value="operationkyc">operationkyc (KYC)</option>
+              <option value="verification-kyc">verification-kyc (Mule)</option>
+              <option value="opsverification">opsverification (OPS)</option>
+              <option value="opsmule">opsmule (OPS Mule)</option> 
+            </select>
+          </div>
+          <div><label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Target Date</label><input type="date" id="tx-target-date" autocomplete="off" class="w-full apple-input"></div>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Start Time</label><input type="time" id="tx-start-time" autocomplete="off" class="w-full apple-input"></div>
+            <div><label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">End Time</label><input type="time" id="tx-end-time" autocomplete="off" class="w-full apple-input"></div>
+          </div>
+        </div>
+        <div class="flex gap-3 mt-6 border-t border-gray-200 dark:border-gray-800 pt-5">
+          <button onclick="closeTransferModal()" class="flex-1 py-3 bg-gray-200 text-gray-700 dark:bg-gray-800 dark:text-gray-300 font-semibold text-sm rounded-xl transition hover:bg-gray-300 dark:hover:bg-gray-700 focus:outline-none">Cancel</button>
+          <button onclick="confirmTransferExecution()" id="tx-submit-btn" class="flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm rounded-xl shadow-sm transition focus:outline-none"><i class="fa-solid fa-arrow-right-arrow-left mr-2"></i> Transfer</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="customWebModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50 p-4" style="backdrop-filter:blur(8px)">
+      <div class="glass-panel p-6 max-w-xs w-full text-center fade-in-scale">
+        <div id="modal-icon-container" class="w-16 h-16 rounded-full flex items-center justify-center text-3xl mx-auto mb-4"></div>
+        <h3 id="modal-title" class="text-lg font-bold mb-1.5"></h3>
+        <p id="modal-text" class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed whitespace-pre-wrap"></p>
+        <div class="flex gap-2" id="modal-actions"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    let rawData = [], filteredData = [], currentSelectedOwner = 'all', currentMode = 'daily', userRole = "Viewer", userAssignedTeam = "none", teamDatabase = {}, isEmailMasked = true, knownEventIds = null, autoRefreshInterval = null;
+
+    window.addEventListener('load', function() {
+      try {
+        document.body.classList.remove('dark-theme-mode');
+        
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('datePicker').value = today; 
+        document.getElementById('endDatePicker').value = today;
+        
+        initAppInternal(function() {
+          forceSyncAndFetch();
+          autoRefreshInterval = setInterval(function() { 
+            google.script.run.withSuccessHandler(function() { fetchData(true); }).checkNewEventsAndNotifySlack();
+          }, 60000);
+        });
+      } catch (err) {
+        document.body.innerHTML = `<div style="padding: 40px; color: red; text-align: center; font-family: sans-serif;"><h3>Application Load Error</h3><p>${err.message}</p></div>`;
+      }
+    });
+
+    function getDisplayEmail(email) {
+      if (!email || email === "-") return '-'; 
+      if (!isEmailMasked) return email;
+      const p = email.split('@'); 
+      if (p.length < 2) return email;
+      return (p[0].length <= 3 ? p[0][0] + '***' : p[0].substring(0, 3) + '***') + '@' + p[1];
+    }
+
+    function showWebAlert(title, message, isSuccess, onClose) {
+      const modal = document.getElementById('customWebModal'), icon = document.getElementById('modal-icon-container');
+      document.getElementById('modal-title').innerText = title; 
+      document.getElementById('modal-text').innerText = message;
+      icon.className = "w-16 h-16 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 " + (isSuccess ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600");
+      icon.innerHTML = isSuccess ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-solid fa-circle-exclamation"></i>';
+      document.getElementById('modal-actions').innerHTML = '<button onclick="closeCustomModal()" class="flex-1 py-3 btn-bitkub text-white font-semibold text-sm rounded-xl transition">OK</button>';
+      document._modalOnClose = onClose || null; 
+      modal.classList.remove('hidden');
+    }
+
+    function showWebConfirm(title, message, onConfirm) {
+      const modal = document.getElementById('customWebModal'), icon = document.getElementById('modal-icon-container');
+      document.getElementById('modal-title').innerText = title; 
+      document.getElementById('modal-text').innerText = message;
+      icon.className = "w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4";
+      icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+      document.getElementById('modal-actions').innerHTML = `<button onclick="closeCustomModal()" class="flex-1 py-3 bg-gray-200 text-gray-700 dark:bg-gray-800 dark:text-gray-300 font-semibold text-sm rounded-xl border border-transparent transition hover:bg-gray-300 dark:hover:bg-gray-700">Cancel</button><button id="confirm-ok-btn" class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm rounded-xl transition">Confirm</button>`;
+      document.getElementById('confirm-ok-btn').onclick = function() { closeCustomModal(); if(onConfirm) onConfirm(); };
+      document._modalOnClose = null; 
+      modal.classList.remove('hidden');
+    }
+
+    function closeCustomModal() { 
+      document.getElementById('customWebModal').classList.add('hidden'); 
+      if(document._modalOnClose){document._modalOnClose(); document._modalOnClose=null;} 
+    }
+
+    function initAppInternal(callback) {
+      google.script.run
+      .withFailureHandler(function(err){ 
+         document.getElementById('loading-screen').innerHTML = `<div style="color:red;">Error: ${err.message}</div>`;
+      })
+      .withSuccessHandler(function(settings) {
+        userRole = settings.currentRole; 
+        userAssignedTeam = settings.userAssignedTeam; 
+        teamDatabase = settings.teamDatabase;
+        
+        document.getElementById('loading-screen').style.display = 'none';
+        document.getElementById('main-app-shell').classList.remove('hidden');
+
+        const adminBtn = document.getElementById('tab-btn-admin');
+        if (userRole === 'Admin') { 
+            adminBtn.classList.remove('hidden'); 
+            renderAdminTeamTable(); 
+        } else {
+            adminBtn.classList.add('hidden');
+        }
+
+        document.getElementById('user-display-email').innerText = settings.currentUserEmail;
+        document.getElementById('user-display-role').innerText = settings.currentRole + (userRole === "Staff" ? " (" + userAssignedTeam + ")" : "");
+        buildOfficerFilter(); 
+        if (callback) callback();
+      }).getSystemSettings();
+    }
+
+    function toggleAppThemeMode() {
+      const body = document.body, icon = document.getElementById('theme-toggle-icon'); 
+      body.classList.toggle('dark-theme-mode');
+      icon.className = body.classList.contains('dark-theme-mode') ? "fa-solid fa-sun text-base text-yellow-500" : "fa-solid fa-moon text-base text-indigo-500";
+    }
+
+    function toggleEmailMasking() { 
+      isEmailMasked = !isEmailMasked; 
+      document.getElementById('mask-icon').className = isEmailMasked ? "fa-solid fa-eye-slash text-sm text-gray-400" : "fa-solid fa-eye text-sm text-blue-500"; 
+      renderTable(); 
+      
+      document.querySelectorAll('[id^="officer-"]').forEach(select => {
+        const options = select.querySelectorAll('option');
+        options.forEach(opt => {
+          if (opt.value && opt.value.includes('@')) {
+            opt.textContent = getDisplayEmail(opt.value);
+          }
+        });
+      });
+    }
+
+    function switchTab(mode) {
+      if (currentMode === mode) return;
+      currentMode = mode;
+      
+      document.getElementById('date-label-text').innerText = mode === 'daily' ? "Target Date" : "Start Date";
+      
+      const endDateContainer = document.getElementById('end-date-container');
+      if (mode === 'range') endDateContainer.classList.remove('hidden');
+      else endDateContainer.classList.add('hidden');
+      
+      ['daily','range','admin'].forEach(function(t) {
+        const btn = document.getElementById('tab-btn-' + t); 
+        if(btn) btn.className = t === mode ? "px-5 py-2.5 bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400 font-semibold text-sm rounded-xl whitespace-nowrap focus:outline-none transition-all shadow-sm" : "px-5 py-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium text-sm rounded-xl whitespace-nowrap focus:outline-none transition-all";
+      });
+      
+      const container = document.getElementById('tab-content-container');
+      container.classList.remove('view-visible');
+      
+      setTimeout(function() {
+        const filterPanel = document.getElementById('main-filter-panel');
+        const queuePanel = document.getElementById('queue-filter-panel');
+        const dailyPanel = document.getElementById('daily-kpi-panel');
+        const rangePanel = document.getElementById('range-stats-panel');
+        const tablePanel = document.getElementById('main-table-panel');
+        const adminViewEl = document.getElementById('admin-view');
+
+        if (mode === 'admin') {
+           filterPanel.style.display = 'none';
+           queuePanel.style.display = 'none';
+           dailyPanel.style.display = 'none';
+           rangePanel.style.display = 'none';
+           tablePanel.style.display = 'none';
+           
+           adminViewEl.classList.remove('hidden');
+           renderAdminTeamTable();
+           
+           if (autoRefreshInterval) {
+             clearInterval(autoRefreshInterval);
+             autoRefreshInterval = null;
+           }
+        } else {
+           filterPanel.style.display = 'flex';
+           queuePanel.style.display = 'flex';
+           tablePanel.style.display = 'block';
+           
+           adminViewEl.classList.add('hidden');
+           
+           if (!autoRefreshInterval) {
+             autoRefreshInterval = setInterval(function() { 
+               google.script.run.withSuccessHandler(function() { fetchData(true); }).checkNewEventsAndNotifySlack();
+             }, 60000);
+           }
+          
+          if (mode === 'daily') {
+            dailyPanel.style.display = 'grid';
+            rangePanel.style.display = 'none';
+            forceSyncAndFetch();
+          } else {
+            dailyPanel.style.display = 'none';
+            rangePanel.style.display = 'block';
+            fetchData(false);
+          }
+        }
+        container.classList.add('view-visible');
+      }, 300);
+    }
+
+    function toggleOwnerFilter(owner) {
+      currentSelectedOwner = owner;
+      const themes = {
+        'all': { a: "bg-blue-600 text-white shadow-sm border border-transparent", i: "bg-transparent text-gray-500 border border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800" },
+        'opskyc': { a: "badge-opskyc shadow-sm", i: "bg-transparent text-blue-600 border border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900" },
+        'operationkyc': { a: "badge-oper shadow-sm", i: "bg-transparent text-orange-600 border border-orange-200 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-800 dark:hover:bg-orange-900" },
+        'verification-kyc': { a: "badge-vkyc shadow-sm", i: "bg-transparent text-purple-600 border border-purple-200 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-800 dark:hover:bg-purple-900" },
+        'opsverification': { a: "badge-over shadow-sm", i: "bg-transparent text-teal-600 border border-teal-200 hover:bg-teal-50 dark:text-teal-400 dark:border-teal-800 dark:hover:bg-teal-900" },
+        'opsmule': { a: "badge-opsmule shadow-sm", i: "bg-transparent text-stone-600 border border-stone-200 hover:bg-stone-50 dark:border-stone-800 dark:text-stone-400 dark:hover:bg-stone-900" } 
+      };
+      ['all','opskyc','operationkyc','verification-kyc','opsverification','opsmule'].forEach(function(t) {
+        const btn = document.getElementById('tab-' + t); 
+        if (btn) btn.className = "px-4 py-1.5 text-xs font-semibold rounded-full transition " + (t === owner ? themes[t].a : themes[t].i);
+      });
+      applyFilters();
+    }
+
+    function forceSyncAndFetch() {
+      if (currentMode === 'admin') return;
+      let btn = document.getElementById('refresh-btn');
+      if (btn) btn.innerHTML = '<i class="fa-solid fa-arrows-rotate fa-spin mr-1.5"></i> <span>Syncing...</span>';
+      
+      fetchData(false);
+      google.script.run.checkNewEventsAndNotifySlack();
+      
+      setTimeout(() => { 
+        if(btn) btn.innerHTML = '<i class="fa-solid fa-arrows-rotate mr-1.5"></i> <span>Refresh</span>'; 
+      }, 2000);
+    }
+
+    function fetchData(isSilent = false) {
+      if (currentMode === 'admin') return;
+      const start = document.getElementById('datePicker').value, end = document.getElementById('endDatePicker').value;
+      
+      google.script.run
+      .withFailureHandler(function(err){ 
+        Swal.fire({ icon: 'error', title: 'Load Error', text: "Unable to load events: " + err.message });
+      })
+      .withSuccessHandler(function(masterData) {
+        
+        let idMap = {};
+        masterData.forEach(item => {
+            if (!idMap[item.id]) {
+                idMap[item.id] = item;
+            } else {
+                const getPriority = (st) => {
+                    if (st === 'Need check') return 4;
+                    if (st === 'EDD Done' || st === 'EDD Not done') return 3;
+                    if (st === 'Transferred') return 2;
+                    if (st === 'Cancelled') return 1;
+                    if (st === 'Blocked slot') return 0;
+                    return 0;
+                };
+                if (getPriority(item.status) > getPriority(idMap[item.id].status)) {
+                    idMap[item.id] = item;
+                }
+            }
+        });
+
+        let deduped = Object.values(idMap);
+
+        const mMap = {'Jan':'01','Feb':'02','Mar':'03','Apr':'04','May':'05','Jun':'06','Jul':'07','Aug':'08','Sep':'09','Oct':'10','Nov':'11','Dec':'12'};
+        let sorted = deduped.sort((a, b) => {
+          let pA = a.dateStr.split('-'); 
+          let pB = b.dateStr.split('-');
+          let valA = pA.length === 3 ? parseInt(pA[2] + mMap[pA[1]] + pA[0] + a.startTime.replace(':',''), 10) : 0;
+          let valB = pB.length === 3 ? parseInt(pB[2] + mMap[pB[1]] + pB[0] + b.startTime.replace(':',''), 10) : 0;
+          return valA - valB; 
+        });
+        
+        rawData = sorted;
+
+        let newAlerts = [];
+        
+        if (isSilent && knownEventIds !== null) {
+          rawData.forEach(function(item) {
+            if (!knownEventIds.has(item.id)) {
+              newAlerts.push(item);
+              knownEventIds.add(item.id);
+            }
+          });
+        } else {
+          knownEventIds = new Set(rawData.map(function(i){ return i.id; }));
+        }
+
+        if (newAlerts.length > 0 && isSilent) {
+          const prettyMap = {'opskyc':'opskyc (KYC Risk)','operationkyc':'operationkyc (KYC)','verification-kyc':'verification-kyc (Mule)','opsverification':'opsverification (OPS)','opsmule':'opsmule (OPS Mule)'};
+          let msg = "มี Slot ใหม่ถูกจองเข้ามา:\n\n"; 
+          newAlerts.forEach(function(b){ 
+            if (b.status !== "Blocked slot") { // ไม่แจ้งเตือน Blocked slot
+              msg += "\u2022 [" + (prettyMap[b.owner] || b.owner) + "]\n  " + b.dateStr + " \u2022 " + b.startTime + " \u0e19.\n\n"; 
+            }
+          });
+          if (msg !== "มี Slot ใหม่ถูกจองเข้ามา:\n\n") Swal.fire({ icon: 'info', title: '🔔 นัดหมายใหม่เข้ามา!', text: msg });
+        }
+        
+        applyFilters(); 
+        document.getElementById('liveTime').innerText = new Date().toLocaleTimeString('en-US', { hour12: false });
+      }).getMasterCombinedCalendarData(start, currentMode === 'daily' ? null : end);
+    }
+
+    function applyFilters() {
+      try {
+        const search = document.getElementById('searchFilter').value.toLowerCase(), 
+              status = document.getElementById('statusFilter').value, 
+              eddType = document.getElementById('eddTypeFilter').value.toLowerCase(), 
+              officerF = document.getElementById('officerFilter').value;
+        
+        filteredData = rawData.filter(function(item) {
+          // 🚀 ซ่อน Blocked Slot ออกจากหน้า Daily Operations เด็ดขาด
+          let isBlocked = (item.customerEmail === '-' || item.status === 'Blocked slot');
+          if (currentMode === 'daily' && isBlocked) return false;
+
+          return ((item.customerEmail||"").toLowerCase().includes(search) || (item.title||"").toLowerCase().includes(search) || (item.uid||"").toLowerCase().includes(search))
+            && (status === "" || (item.status || "Need check") === status) 
+            && (eddType === "" || (item.eddType || "Unknown").toLowerCase().includes(eddType)) 
+            && (officerF === "" || (item.officer || "") === officerF) 
+            && (currentSelectedOwner === 'all' || item.owner === currentSelectedOwner);
+        });
+        
+        document.getElementById('record-count-badge').innerText = filteredData.length + " record" + (filteredData.length !== 1 ? "s" : "");
+        renderTable(); 
+        calculateKPIsAndInsights();
+        
+        if (currentMode === 'range') updateRangeStatsLocally();
+      } catch(e) { console.error(e); }
+    }
+
+    function updateRangeStatsLocally() {
+      const total = filteredData.length;
+      const stats = {
+          total: total,
+          byStatus: { 'Need check':0, 'EDD Not done':0, 'EDD Done':0, 'Cancelled':0, 'Transferred':0, 'Blocked slot':0 },
+          byOwner: { 'opskyc':0, 'operationkyc':0, 'verification-kyc':0, 'opsverification':0, 'opsmule':0 }
+      };
+      filteredData.forEach(item => {
+          let st = item.status || 'Need check';
+          if (stats.byStatus[st] !== undefined) stats.byStatus[st]++;
+          else stats.byStatus[st] = 1;
+
+          let ow = item.owner;
+          if (stats.byOwner[ow] !== undefined) stats.byOwner[ow]++;
+          else stats.byOwner[ow] = 1;
+      });
+      renderRangeAnalytics(stats);
+    }
+
+    function calculateKPIsAndInsights() {
+      try {
+        const total = filteredData.length; 
+        document.getElementById('insight-total-cases').innerText = total + " Cases";
+        const chartBox = document.getElementById('edd-type-chart-container');
+        if (chartBox) {
+          chartBox.innerHTML = ''; 
+          if (total === 0) { 
+            chartBox.innerHTML = '<p class="text-sm text-gray-400 text-center py-6">No data available</p>'; 
+          } else {
+            const typeCounts = {}; 
+            filteredData.forEach(function(item){ 
+              const t = item.eddType || 'Unknown'; 
+              typeCounts[t] = (typeCounts[t]||0)+1; 
+            });
+            // 🚀 ฝังรหัสสีตรงๆ เพื่อป้องกันบั๊ก Tailwind CSS ไม่โหลดสีที่ไม่ได้เรียกใช้
+            const hexColors = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EC4899', '#14B8A6', '#6366F1', '#F43F5E'];
+            Object.keys(typeCounts).sort(function(a,b){ return typeCounts[b]-typeCounts[a]; }).forEach(function(type, idx) {
+              const count = typeCounts[type], pct = Math.round((count/total)*100);
+              const barColor = hexColors[idx % hexColors.length];
+              chartBox.innerHTML += `<div class="mb-3"><div class="flex justify-between text-xs font-medium mb-1.5"><span class="truncate pr-2" title="${type}">${type}</span><span class="text-gray-500">${pct}% (${count})</span></div><div class="w-full h-2 rounded-full overflow-hidden" style="background-color: var(--border-color)"><div class="h-full range-bar" style="background-color:${barColor}; width:${pct}%;"></div></div></div>`;
+            });
+          }
+        }
+        const uO = filteredData.filter(function(i){return i.owner==='opskyc';}).length, 
+              uK = filteredData.filter(function(i){return i.owner==='operationkyc';}).length;
+        const uV = filteredData.filter(function(i){return i.owner==='verification-kyc';}).length, 
+              uP = filteredData.filter(function(i){return i.owner==='opsverification';}).length,
+              uM = filteredData.filter(function(i){return i.owner==='opsmule';}).length; 
+        
+        [['opskyc',uO,'txt-u-opskyc','bar-u-opskyc','bar-opskyc'],
+         ['oper',uK,'txt-u-oper','bar-u-oper','bar-oper'],
+         ['vkyc',uV,'txt-u-vkyc','bar-u-vkyc','bar-vkyc'],
+         ['over',uP,'txt-u-over','bar-u-over','bar-over'],
+         ['opsmule',uM,'txt-u-opsmule','bar-u-opsmule','bar-opsmule'] 
+        ].forEach(function(arr){
+          const pct = total ? Math.round((arr[1]/total)*100) : 0; 
+          const txtEl = document.getElementById(arr[2]);
+          if(txtEl) txtEl.innerText = pct+'% ('+arr[1]+')'; 
+          const bar = document.getElementById(arr[3]);
+          if(bar) { 
+            bar.style.width = pct+'%'; 
+            bar.className = `h-full range-bar ${arr[4]}`; 
+          }
+        });
+        
+        const done = filteredData.filter(function(i){return i.status==='EDD Done';}).length;
+        document.getElementById('insight-lang-th').innerText = filteredData.filter(function(i){return i.language.toLowerCase().includes('thai');}).length;
+        document.getElementById('insight-lang-en').innerText = filteredData.filter(function(i){return !i.language.toLowerCase().includes('thai');}).length;
+        document.getElementById('kpi-done').innerText = done; 
+        document.getElementById('kpi-notdone').innerText = filteredData.filter(function(i){return i.status==='EDD Not done';}).length;
+        document.getElementById('insight-sla-pending').innerText = filteredData.filter(function(i){return i.status==='Need check';}).length + " Items";
+        document.getElementById('txt-done-percent').innerText = 'Done: ' + (total ? Math.round((done/total)*100) : 0) + '%';
+      } catch(e) { console.error(e); }
+    }
+
+    function renderRangeAnalytics(stats) {
+      if (!stats) return; 
+      const container = document.getElementById('range-analytics-content');
+      
+      let html = '<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">';
+      html += `<div class="glass-panel p-6 rounded-2xl flex flex-col justify-center items-center text-center"><div class="text-5xl font-light tracking-tight text-blue-500 mb-1">${stats.total}</div><div class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Total Volume</div></div>`;
+      html += `<div class="glass-panel p-6 rounded-2xl flex flex-col justify-center items-center text-center"><div class="text-5xl font-light tracking-tight text-green-500 mb-1">${stats.byStatus['EDD Done']||0}</div><div class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Completed</div></div>`;
+      html += `<div class="glass-panel p-6 rounded-2xl flex flex-col justify-center items-center text-center"><div class="text-5xl font-light tracking-tight text-red-500 mb-1">${stats.byStatus['EDD Not done']||0}</div><div class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Action Required</div></div>`;
+      html += `<div class="glass-panel p-6 rounded-2xl flex flex-col justify-center items-center text-center"><div class="text-5xl font-light tracking-tight text-yellow-500 mb-1">${stats.byStatus['Need check']||0}</div><div class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Pending Checks</div></div>`;
+      html += '</div>';
+
+      html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">';
+      
+      // 🚀 สร้างกราฟ Status Breakdown แสดงให้ครบทุก Status
+      html += '<div class="glass-panel p-6 rounded-2xl text-left"><p class="font-bold text-xs text-gray-400 mb-5 uppercase tracking-wider">Status Breakdown</p>';
+      const statusKeys = ['Need check', 'EDD Not done', 'EDD Done', 'Cancelled', 'Transferred', 'Blocked slot'];
+      const statusColors = { 'Need check':'#EAB308', 'EDD Not done':'#EF4444', 'EDD Done':'#22C55E', 'Cancelled':'#9CA3AF', 'Transferred':'#6B7280', 'Blocked slot':'#1F2937' };
+      statusKeys.forEach(function(s) { 
+        const count = stats.byStatus[s] || 0;
+        // โชว์กราฟถ้ามีเคส หรือเป็นสถานะหลัก
+        if(count > 0 || s === 'Need check' || s === 'EDD Done' || s === 'EDD Not done' || s === 'Transferred' || s === 'Cancelled' || s === 'Blocked slot') {
+          const pct = stats.total ? Math.round((count/stats.total)*100) : 0; 
+          html += `<div class="mb-4">
+                     <div class="flex justify-between text-sm font-medium mb-1.5">
+                       <span class="text-gray-700 dark:text-gray-300">${s}</span>
+                       <span class="text-gray-500 font-bold">${pct}% <span class="font-normal opacity-70">(${count} cases)</span></span>
+                     </div>
+                     <div class="w-full h-2 rounded-full overflow-hidden" style="background-color: var(--border-color)">
+                       <div class="h-full range-bar" style="background-color:${statusColors[s]}; width:${pct}%"></div>
+                     </div>
+                   </div>`; 
+        }
+      });
+      html += '</div>';
+      
+      html += '<div class="glass-panel p-6 rounded-2xl text-left"><p class="font-bold text-xs text-gray-400 mb-5 uppercase tracking-wider">Team Distribution</p>'; 
+      const prettyMap = {'opskyc':'KYC Risk','operationkyc':'KYC','verification-kyc':'Mule','opsverification':'OPS', 'opsmule': 'OPS Mule'};
+      const teamColors = {'opskyc':'bar-opskyc','operationkyc':'bar-oper','verification-kyc':'bar-vkyc','opsverification':'bar-over', 'opsmule': 'bar-opsmule'};
+      Object.keys(prettyMap).forEach(function(o) { 
+        const pct = stats.total ? Math.round(((stats.byOwner[o]||0)/stats.total)*100) : 0; 
+        html += `<div class="mb-4"><div class="flex justify-between text-sm font-medium mb-1.5"><span class="text-gray-700 dark:text-gray-300">${prettyMap[o]}</span><span class="text-gray-500">${stats.byOwner[o]||0}</span></div><div class="w-full h-2 rounded-full overflow-hidden" style="background-color: var(--border-color)"><div class="h-full range-bar ${teamColors[o]}" style="width:${pct}%"></div></div></div>`; 
+      });
+      html += `</div></div>`; 
+      container.innerHTML = html;
+    }
+
+    function toggleCellState(type, id, open) {
+      if (open) {
+        document.getElementById(type+'-txt-block-'+id).classList.add('hidden');
+        document.getElementById(type+'-edit-block-'+id).classList.remove('hidden');
+      } else {
+        document.getElementById(type+'-txt-block-'+id).classList.remove('hidden');
+        document.getElementById(type+'-edit-block-'+id).classList.add('hidden');
+      }
+    }
+
+    function toggleInlineAuditLogTray(eventId, owner) {
+      const row = document.getElementById(`audit-row-${eventId}`);
+      const container = document.getElementById(`audit-content-${eventId}`);
+      
+      if (!row.classList.contains('hidden')) { 
+        row.classList.add('hidden'); 
+        return; 
+      }
+      row.classList.remove('hidden'); 
+      container.innerHTML = '<div class="text-sm text-gray-400 py-4 inline-flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin text-blue-500"></i>Streaming history track...</div>';
+      
+      google.script.run.withSuccessHandler(function(res) {
+        if (!res.success || res.logs.length === 0) { 
+          container.innerHTML = '<div class="text-sm text-gray-400 py-3 inline-flex items-center gap-2"><i class="fa-solid fa-inbox opacity-50"></i>No modifications logged.</div>'; 
+          return; 
+        }
+        
+        let htmlLog = '<div class="mt-4 pl-1">';
+        htmlLog += res.logs.map(function(log, idx) {
+          let parts = log.timestamp.split(' by ');
+          let dtStr = parts[0];
+          let authorStr = parts.length > 1 ? parts[1] : 'System';
+          
+          let detailLines = log.detail.split('\n').map(line => {
+            let cleaned = line.replace(/^\s*[•\-]\s*/, '').trim();
+            if(cleaned) return `<li class="ml-5 list-disc marker:text-gray-400 text-xs text-gray-700 dark:text-gray-300 py-0.5 leading-relaxed">${cleaned}</li>`;
+            return '';
+          }).join('');
+
+          let isLast = idx === res.logs.length - 1;
+          
+          return `
+            <div class="flex gap-4">
+              <div class="flex flex-col items-center">
+                <div class="w-3 h-3 bg-blue-500 rounded-full shadow-sm ring-4 ring-gray-50 dark:ring-[#1C1C1E] mt-1.5 flex-shrink-0"></div>
+                ${!isLast ? '<div class="w-0.5 h-full bg-gray-200 dark:bg-gray-700 my-1.5"></div>' : ''}
+              </div>
+              <div class="pb-6 w-full">
+                <div class="flex flex-wrap items-center gap-2 mb-2 -mt-0.5">
+                  <span class="text-[13px] font-bold text-gray-900 dark:text-gray-100">${dtStr}</span>
+                  <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">BY</span>
+                  <span class="bg-yellow-100 text-yellow-800 font-bold px-2 py-0.5 rounded-md text-[10px] shadow-sm tracking-wide border border-yellow-200">${authorStr}</span>
+                </div>
+                <ul class="space-y-1 font-medium">
+                  ${detailLines}
+                </ul>
+              </div>
+            </div>
+          `;
+        }).join('');
+        htmlLog += '</div>';
+        container.innerHTML = htmlLog;
+      }).getEventAuditLog(owner, eventId);
+    }
+
+    function renderTable() {
+      try {
+        const tbody = document.getElementById('tableBody'); 
+        tbody.innerHTML = '';
+        if (filteredData.length === 0) { 
+          tbody.innerHTML = '<tr><td colspan="7" class="p-16 text-center text-gray-400"><i class="fa-solid fa-folder-open text-3xl mb-3 block"></i><p class="text-base font-medium">No records matched.</p></td></tr>'; 
+          return; 
+        }
+        
+        const prettyMap = {'opskyc':'KYC Risk','operationkyc':'KYC','verification-kyc':'Mule','opsverification':'OPS','opsmule':'OPS Mule'};
+
+        filteredData.forEach(function(item, index) {
+
+          let typeStr = item.eddType || "Unknown";
+          let isEditable = false;
+          if (userRole === "Admin") { 
+            isEditable = true; 
+          } else if (userRole === "Staff" && currentSelectedOwner !== 'all' && item.owner === userAssignedTeam) { 
+            isEditable = true; 
+          }
+
+          let typeBadge = `<span class="bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border border-purple-200 dark:border-purple-800/50 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold flex items-center justify-start text-left break-words whitespace-normal leading-snug w-max max-w-full">${typeStr}</span>`;
+          
+          const statusMap = {
+            'EDD Not done': '<span class="bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800/50 px-2.5 py-1 rounded-lg text-xs font-semibold">EDD Not done</span>',
+            'EDD Done': '<span class="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800/50 px-2.5 py-1 rounded-lg text-xs font-semibold">✅ EDD Done</span>',
+            'Cancelled': '<span class="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700 px-2.5 py-1 rounded-lg text-xs font-semibold">Cancelled</span>',
+            'Transferred': '<span class="bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 px-2.5 py-1 rounded-lg text-xs font-semibold">Transferred</span>',
+            'Blocked slot': '<span class="bg-gray-800 text-white border border-gray-900 px-2.5 py-1 rounded-lg text-xs font-semibold"><i class="fa-solid fa-ban text-[10px] mr-1"></i> Blocked slot</span>',
+          };
+          const statusBadge = statusMap[item.status] || '<span class="bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800/50 px-2.5 py-1 rounded-lg text-xs font-semibold">⏳ Need check</span>';
+
+          let officerOptions = '<option value="">Unassigned</option>';
+          for (const email in teamDatabase) { 
+            const officerName = teamDatabase[email].name || email.split('@')[0];
+            officerOptions += `<option value="${officerName}" ${item.officer===officerName?'selected':''}>${officerName}</option>`; 
+          }
+
+          const uidBlock = `
+            <div id="uid-txt-block-${item.id}" class="inline-flex items-center gap-1.5 w-full">
+              <span class="text-[11px] font-semibold text-gray-400 uppercase">UID:</span>
+              <span class="font-mono font-medium text-sm">${item.uid||'-'}</span>
+              ${isEditable?`<button onclick="toggleCellState('uid','${item.id}',true)" class="text-gray-400 hover:text-blue-500 transition"><i class="fa-solid fa-pencil text-[10px]"></i></button>`:''}
+            </div>
+            <div id="uid-edit-block-${item.id}" class="hidden flex items-center gap-1.5 w-full">
+              <input type="text" autocomplete="off" id="uid-input-${item.id}" value="${item.uid!=='-'?item.uid:''}" placeholder="UID" class="w-full px-2 py-1 font-mono font-medium focus:outline-none apple-input">
+              <button onclick="toggleCellState('uid','${item.id}',false)" class="text-red-400 hover:text-red-600 transition"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+          `;
+
+          const typeBlock = `
+            <div id="type-txt-block-${item.id}" class="flex items-center gap-1.5 w-full">
+              <div class="flex-1 w-full">${typeBadge}</div>
+              ${isEditable?`<button onclick="toggleCellState('type','${item.id}',true)" class="text-gray-400 hover:text-purple-500 transition flex-shrink-0"><i class="fa-solid fa-pencil text-[10px]"></i></button>`:''}
+            </div>
+            <div id="type-edit-block-${item.id}" class="hidden flex items-center gap-1.5 w-full">
+              <input type="text" autocomplete="off" id="eddType-input-${item.id}" value="${typeStr === 'Unknown' ? '' : typeStr}" placeholder="Enter Type..." class="w-full font-medium px-2 py-1 focus:outline-none apple-input">
+              <button onclick="toggleCellState('type','${item.id}',false)" class="text-red-400 hover:text-red-600 transition"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+          `;
+
+          let ownerBadgeClass = "bg-gray-100 text-gray-600 border-gray-200";
+          if (item.owner === "opskyc") ownerBadgeClass = "badge-opskyc";
+          if (item.owner === "operationkyc") ownerBadgeClass = "badge-oper";
+          if (item.owner === "verification-kyc") ownerBadgeClass = "badge-vkyc";
+          if (item.owner === "opsverification") ownerBadgeClass = "badge-over";
+          if (item.owner === "opsmule") ownerBadgeClass = "badge-opsmule"; 
+
+          let langStr = (item.language || 'Thai').toUpperCase();
+          let langColor = "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
+          if (langStr.includes('INTERPRETER')) { langColor = "lang-int"; }
+          else if (langStr.includes('ENGLISH') || langStr.includes('ENG')) { langColor = "lang-en"; }
+          else if (langStr.includes('THAI')) { langColor = "lang-th"; }
+          let langBadge = `<span class="px-2 py-0.5 border rounded-md text-[10px] font-bold inline-flex items-center gap-1 shadow-xs ${langColor}"><i class="fa-solid fa-language text-[10px]"></i>${langStr}</span>`;
+
+          let isTransferred = item.status === 'Transferred' || item.status === 'Cancelled' || item.status === 'Blocked slot';
+          let rowBgClass = isTransferred ? "bg-gray-200 dark:bg-gray-900 opacity-60 grayscale" : "row-hover hover:bg-gray-50 dark:hover:bg-gray-800/50";
+
+          const mainRow = document.createElement('tr');
+          mainRow.className = `${rowBgClass} transition fade-in select-none`;
+          mainRow.innerHTML = `
+            <td class="p-4 align-top" style="width: 12%;">
+              <div class="font-semibold text-[15px] text-gray-900 dark:text-gray-100">${item.dateStr}</div>
+              <div class="text-xs text-gray-400 mt-1 font-medium inline-flex items-center"><i class="fa-regular fa-clock mr-1.5 text-[11px]"></i>${item.startTime}–${item.endTime}</div>
+            </td>
+            <td class="p-4 align-top overflow-hidden" style="width: 22%;">
+              <div class="flex flex-col gap-2 w-full">
+                <div>${uidBlock}</div>
+                <div class="text-sm font-medium inline-flex items-center gap-2 w-full overflow-hidden text-gray-700 dark:text-gray-300" title="${item.customerEmail}">
+                  <i class="fa-regular fa-envelope text-gray-400 text-xs flex-shrink-0"></i>
+                  <span class="break-all block w-full leading-snug">${getDisplayEmail(item.customerEmail)}</span>
+                </div>
+                <div class="mt-1">${langBadge}</div>
+              </div>
+            </td>
+            <td class="p-4 align-top" style="width: 20%;"><div class="flex flex-col gap-3 items-start w-full">${typeBlock}${statusBadge}</div></td>
+            <td class="p-4 align-top" style="width: 13%;">
+              ${item.meetLink?`<a href="${item.meetLink}" target="_blank" class="w-full inline-flex items-center justify-center gap-1.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition"><i class="fa-solid fa-video text-[10px]"></i>Join Meet</a>`:'<span class="text-gray-400 dark:text-gray-500 text-xs font-medium inline-flex items-center justify-center gap-1.5 py-1.5"><i class="fa-solid fa-video-slash"></i>No Link</span>'}
+              <div class="mt-3"><span class="py-1 px-2.5 border rounded-lg font-medium text-[10px] flex items-center w-max gap-1.5 shadow-xs ${ownerBadgeClass}"><i class="fa-solid fa-circle-user text-[10px] opacity-70"></i>${prettyMap[item.owner]||item.owner}</span></div>
+            </td>
+            <td class="p-4 align-top" style="width: 11%;"><select ${!isEditable?'disabled':''} id="officer-${item.id}" autocomplete="off" class="w-full apple-input p-2 font-medium focus:outline-none ${!isEditable?'opacity-50 cursor-not-allowed':''}">${officerOptions}</select></td>
+            <td class="p-4 align-top" style="width: 12%;"><div class="flex flex-col gap-2"><select id="status-${item.id}" autocomplete="off" ${!isEditable?'disabled':''} class="w-full apple-input p-2 font-medium focus:outline-none ${!isEditable?'opacity-50 cursor-not-allowed':''}"><option value="Need check" ${item.status==='Need check'?'selected':''}>Need check</option><option value="EDD Not done" ${item.status==='EDD Not done'?'selected':''}>EDD Not done</option><option value="EDD Done" ${item.status==='EDD Done'?'selected':''}>EDD Done</option><option value="Cancelled" ${item.status==='Cancelled'?'selected':''}>Cancelled</option><option value="Transferred" ${item.status==='Transferred'?'selected':''}>Transferred</option><option value="Blocked slot" ${item.status==='Blocked slot'?'selected':''}>Blocked slot</option></select><textarea autocomplete="off" id="notes-${item.id}" ${!isEditable?'disabled':''} rows="1" placeholder="Logs..." class="w-full apple-input p-2 font-medium focus:outline-none ${!isEditable?'opacity-50 cursor-not-allowed':''}">${item.notes||''}</textarea></div></td>
+            <td class="p-4 text-center align-top min-w-[120px]" style="width: 10%;">
+              ${isEditable?`
+                <div class="inline-flex gap-1.5 justify-center items-center">
+                  <button onclick="saveRow('${item.id}',${index},this)" class="w-8 h-8 bg-gray-900 dark:bg-gray-700 hover:bg-black dark:hover:bg-gray-600 text-white rounded-lg inline-flex items-center justify-center transition shadow-sm border border-gray-700 focus:outline-none" title="Commit Changes"><i class="fa-solid fa-floppy-disk text-xs"></i></button>
+                  <button onclick="openTransferModal('${item.id}','${item.owner}','${item.dateStr}','${item.startTime}','${item.endTime}')" class="w-8 h-8 bg-purple-600 hover:bg-purple-700 text-white rounded-lg inline-flex items-center justify-center transition shadow-sm focus:outline-none" title="Transfer Slot"><i class="fa-solid fa-arrow-right-arrow-left text-xs"></i></button>
+                  <button onclick="toggleInlineAuditLogTray('${item.id}','${item.owner}')" class="w-8 h-8 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-blue-500 border border-gray-200 dark:border-gray-700 rounded-lg inline-flex items-center justify-center transition shadow-sm focus:outline-none" title="Audit Log Trail"><i class="fa-solid fa-clock-rotate-left text-xs"></i></button>
+                </div>
+              `:`<div class="text-[11px] text-gray-400 font-medium py-2"><i class="fa-solid fa-lock opacity-40 mr-1"></i> Locked</div>`}
+            </td>
+          `;
+          tbody.appendChild(mainRow);
+
+          const auditRow = document.createElement('tr'); 
+          auditRow.id = `audit-row-${item.id}`; 
+          auditRow.classList.add('hidden');
+          auditRow.innerHTML = `<td colspan="7" class="p-6 px-8 bg-gray-50/50 dark:bg-gray-900/30 shadow-inner border-b border-gray-200 dark:border-gray-800"><div class="text-xs font-bold text-blue-500 mb-2 inline-flex items-center gap-1.5"><i class="fa-solid fa-clock-rotate-left text-[11px]"></i> Activity Trail History Audit Log</div><div id="audit-content-${item.id}"></div></td>`;
+          tbody.appendChild(auditRow);
+        });
+      } catch(e) { console.error(e); }
+    }
+
+    function buildOfficerFilter() {
+      const officerSelect = document.getElementById('officerFilter');
+      const uniqueOfficers = new Set();
+      
+      for (const email in teamDatabase) {
+        const officer = teamDatabase[email].name || email.split('@')[0];
+        uniqueOfficers.add(officer);
+      }
+      
+      Array.from(uniqueOfficers).sort().forEach(officer => {
+        const opt = document.createElement('option');
+        opt.value = officer;
+        opt.textContent = officer;
+        officerSelect.appendChild(opt);
+      });
+    }
+
+    function saveRow(eventId, index, buttonElement) {
+      const status = document.getElementById('status-' + eventId).value, 
+            notes = document.getElementById('notes-' + eventId).value, 
+            officer = document.getElementById('officer-' + eventId).value;
+      
+      const uidInputNode = document.getElementById('uid-input-' + eventId);
+      let uid = (rawData.find(x => x.id === eventId)||{}).uid||'-';
+      
+      if (uidInputNode && !document.getElementById('uid-edit-block-'+eventId).classList.contains('hidden')) {
+        const inputVal = uidInputNode.value.trim();
+        if (inputVal === '') {
+          Swal.fire({ icon: 'warning', title: 'UID Required', text: 'Please enter a UID or leave it unchanged.' });
+          return;
+        }
+        uid = inputVal;
+      }
+      
+      const typeInputNode = document.getElementById('eddType-input-' + eventId), 
+            eddType = typeInputNode && !document.getElementById('type-edit-block-'+eventId).classList.contains('hidden') ? (typeInputNode.value.trim() || 'Unknown') : (rawData.find(x => x.id === eventId)||{}).eddType||'Unknown';
+      
+      const item = rawData.find(x => x.id === eventId) || {};
+      buttonElement.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-xs"></i>'; 
+      buttonElement.disabled = true;
+      
+      google.script.run.withSuccessHandler(function(res) {
+        if (res && res.success) {
+          buttonElement.innerHTML = '<i class="fa-solid fa-check text-xs"></i>'; 
+          buttonElement.className = "w-8 h-8 btn-bitkub rounded-lg inline-flex items-center justify-center transition shadow-sm";
+          setTimeout(function() { 
+            buttonElement.innerHTML = '<i class="fa-solid fa-floppy-disk text-xs"></i>'; 
+            buttonElement.className = "w-8 h-8 bg-gray-900 hover:bg-black text-white rounded-lg inline-flex items-center justify-center transition shadow-sm border border-gray-700"; 
+            buttonElement.disabled = false; 
+            
+            let mItem = rawData.find(x => x.id === eventId);
+            if(mItem) { 
+              mItem.status = status; 
+              mItem.notes = notes; 
+              mItem.officer = officer; 
+              mItem.uid = uid; 
+              mItem.eddType = eddType; 
+            }
+            let fItem = filteredData.find(x => x.id === eventId);
+            if(fItem) { 
+              fItem.status = status; 
+              fItem.notes = notes; 
+              fItem.officer = officer; 
+              fItem.uid = uid; 
+              fItem.eddType = eddType; 
+            }
+            
+            applyFilters();
+            Swal.fire({ icon: 'success', title: 'Saved', text: 'บันทึกข้อมูลสำเร็จ!', timer: 1500, showConfirmButton: false }); 
+          }, 1200);
+        } else { 
+          Swal.fire({ icon: 'error', title: 'Save Failed', text: res ? res.error : 'Unknown error' });
+          buttonElement.innerHTML = '<i class="fa-solid fa-floppy-disk text-xs"></i>'; 
+          buttonElement.disabled = false; 
+        }
+      }).saveToGoogleCalendar(item.owner, eventId, status, notes, officer, uid, eddType, item.customerEmail);
+    }
+
+    function openTransferModal(eventId, owner, dateStr, startTime, endTime) {
+      document.getElementById('tx-event-id').value = eventId; 
+      document.getElementById('tx-source-owner').value = owner;
+      
+      document.getElementById('tx-target-owner').value = owner;
+      document.getElementById('tx-target-date').value = '';
+      document.getElementById('tx-start-time').value = '';
+      document.getElementById('tx-end-time').value = '';
+      
+      const mth = {'Jan':'01','Feb':'02','Mar':'03','Apr':'04','May':'05','Jun':'06','Jul':'07','Aug':'08','Sep':'09','Oct':'10','Nov':'11','Dec':'12'}, 
+            p = dateStr.split('-');
+      if (p.length === 3) {
+        document.getElementById('tx-target-date').value = p[2] + "-" + (mth[p[1]]||"01") + "-" + p[0].padStart(2,'0');
+      }
+      document.getElementById('tx-start-time').value = startTime; 
+      document.getElementById('tx-end-time').value = endTime;
+      document.getElementById('transferModal').classList.remove('hidden');
+    }
+
+    function closeTransferModal() { 
+      document.getElementById('transferModal').classList.add('hidden'); 
+    }
+
+    function confirmTransferExecution() {
+      const eventId = document.getElementById('tx-event-id').value, 
+            sourceOwner = document.getElementById('tx-source-owner').value, 
+            targetOwner = document.getElementById('tx-target-owner').value, 
+            targetDate = document.getElementById('tx-target-date').value, 
+            startTime = document.getElementById('tx-start-time').value, 
+            endTime = document.getElementById('tx-end-time').value;
+      
+      if (sourceOwner === targetOwner) { 
+        Swal.fire({ icon: 'warning', title: 'Routing Blocked', text: 'ไม่สามารถโอนไปทีมเดิมได้ครับ' });
+        return; 
+      }
+      
+      const btn = document.getElementById('tx-submit-btn'); 
+      btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-xs"></i> Tunneling...'; 
+      btn.disabled = true;
+      
+      google.script.run.withSuccessHandler(function(res) {
+        btn.innerHTML = '<i class="fa-solid fa-arrow-right-arrow-left mr-1.5"></i> Transfer'; 
+        btn.disabled = false; 
+        closeTransferModal();
+        if (res && res.success) {
+          Swal.fire({ icon: 'success', title: 'Transfer Complete', text: 'โอนคิวสำเร็จแล้ว!', timer: 2000, showConfirmButton: false }).then(() => {
+            forceSyncAndFetch();
+          });
+        } else {
+          Swal.fire({ icon: 'error', title: 'Transfer Failed', text: res ? res.error : "Unknown error" });
+        }
+      }).executeSlotTunnelTransfer(sourceOwner, eventId, targetOwner, targetDate, startTime, endTime);
+    }
+
+    function renderAdminTeamTable() {
+      const tbody = document.getElementById('adminTeamTableBody'); 
+      tbody.innerHTML = '';
+      for (const email in teamDatabase) {
+        const member = teamDatabase[email]; 
+        if (!member) continue;
+        const tr = document.createElement('tr'); 
+        tr.className = "row-hover hover:bg-gray-50 dark:hover:bg-gray-800/50 transition text-sm border-b border-gray-200 dark:border-gray-800";
+        tr.innerHTML = `
+          <td class="p-4 font-mono break-words whitespace-normal border-r border-gray-200 dark:border-gray-800"><i class="fa-regular fa-envelope text-gray-400 mr-1.5"></i>${email}</td>
+          <td class="p-4 border-r border-gray-200 dark:border-gray-800"><select onchange="updateRosterRole('${email}',this.value)" autocomplete="off" class="w-full apple-input"><option value="Staff" ${member.role==='Staff'?'selected':''}>Staff</option><option value="Admin" ${member.role==='Admin'?'selected':''}>Admin</option><option value="Viewer" ${member.role==='Viewer'?'selected':''}>Viewer</option></select></td>
+          <td class="p-4 border-r border-gray-200 dark:border-gray-800"><select onchange="updateRosterQueue('${email}',this.value)" autocomplete="off" class="w-full apple-input"><option value="all" ${member.assignedTeam==='all'?'selected':''}>All Tasks Scope</option><option value="opskyc" ${member.assignedTeam==='opskyc'?'selected':''}>opskyc</option><option value="operationkyc" ${member.assignedTeam==='operationkyc'?'selected':''}>operationkyc</option><option value="verification-kyc" ${member.assignedTeam==='verification-kyc'?'selected':''}>verification-kyc</option><option value="opsverification" ${member.assignedTeam==='opsverification'?'selected':''}>opsverification</option><option value="opsmule" ${member.assignedTeam==='opsmule'?'selected':''}>opsmule</option></select></td>
+          <td class="p-4 text-center"><button onclick="deleteTeamMemberRow('${email}')" class="text-red-400 hover:text-red-600 transition"><i class="fa-solid fa-trash-can text-base"></i></button></td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function updateRosterRole(email, val) { 
+      if(teamDatabase[email]) teamDatabase[email].role = val; 
+    }
+
+    function updateRosterQueue(email, val) { 
+      if(teamDatabase[email]) teamDatabase[email].assignedTeam = val; 
+    }
+
+    function addTeamMemberRow() {
+      const raw = document.getElementById('new-team-emails').value, 
+            role = document.getElementById('new-team-role').value, 
+            queue = document.getElementById('new-team-queue').value;
+      
+      if (!raw.trim()) { 
+        Swal.fire({ icon: 'warning', title: 'Input Required', text: 'Please enter emails.' });
+        return; 
+      }
+      
+      let count = 0; 
+      raw.split(/[\n,;\s]+/).forEach(function(e) { 
+        const email = e.trim(); 
+        if (email && email.includes('@')) { 
+          teamDatabase[email] = { role: role, name: email.split('@')[0], assignedTeam: queue }; 
+          count++; 
+        } 
+      });
+      
+      document.getElementById('new-team-emails').value = ''; 
+      renderAdminTeamTable(); 
+      Swal.fire({ icon: 'success', title: 'Members Added', text: count + " member(s) registered. Don't forget to Save & Sync.", timer: 2000 });
+    }
+
+    function deleteTeamMemberRow(email) { 
+      const self = document.getElementById('user-display-email').innerText; 
+      if (email === self) { 
+        Swal.fire({ icon: 'error', title: 'Blocked', text: 'You cannot remove yourself.' });
+        return; 
+      } 
+      Swal.fire({
+        title: 'Remove Member?', text: `Remove ${email} from access list?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'Yes, delete it!'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          delete teamDatabase[email]; 
+          renderAdminTeamTable(); 
+        }
+      });
+    }
+    
+    function saveAdminConsole() { 
+      if (userRole !== "Admin") return; 
+      google.script.run
+        .withSuccessHandler(function(res) { 
+          if (res.success) {
+            Swal.fire({ icon: 'success', title: 'Saved to Database', text: 'Team Access and Action Logs synced successfully.', timer: 2000 }).then(() => {
+              initAppInternal(function(){ switchTab('daily'); }); 
+            });
+          } else {
+            Swal.fire({ icon: 'error', title: 'Save Error', text: "Failed to sync: " + res.error });
+          }
+        })
+        .saveTeamDatabase(teamDatabase); 
+    }
+    
+    function resetFilters() { 
+      document.getElementById('searchFilter').value = ''; 
+      document.getElementById('eddTypeFilter').value = ''; 
+      document.getElementById('statusFilter').value = ''; 
+      document.getElementById('officerFilter').value = ''; 
+      toggleOwnerFilter('all'); 
+    }
+
+    function exportToCSV() { 
+      if (filteredData.length === 0) { 
+        Swal.fire({ icon: 'warning', title: 'No Data', text: 'No records to export.' });
+        return; 
+      } 
+      let csv = "\uFEFF"; 
+      csv += "Date,Time,UID,Customer Email,Language,EDD Type,Status,Officer,Notes,Owner\n"; 
+      filteredData.forEach(function(item) { 
+        csv += '"'+item.dateStr+'","'+item.startTime+' - '+item.endTime+'","'+item.uid+'","'+item.customerEmail+'","'+item.language+'","'+item.eddType+'","'+item.status+'","'+(item.officer||'')+'","'+(item.notes||'').replace(/"/g,'""')+'","'+item.owner.toUpperCase()+'"\n'; 
+      }); 
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'}); 
+      const link = document.createElement('a'); 
+      link.href = URL.createObjectURL(blob); 
+      link.download = 'EDD_Report_' + document.getElementById('datePicker').value + '.csv'; 
+      document.body.appendChild(link); 
+      link.click(); 
+      document.body.removeChild(link); 
+    }
+  </script>
+</body>
+</html>
