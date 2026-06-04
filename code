@@ -1,0 +1,670 @@
+function doGet() {
+  return HtmlService.createHtmlOutputFromFile('Index')
+      .setTitle('EDD Command Center')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+// =======================================================
+// [ CONFIGURATION ]
+// =======================================================
+var SPREADSHEET_ID = "14nx5-VqS1sjDnPrQ2z5Z-r9f3lRoAVzb9x_PHxddFJw"; 
+var DB_SYNC_NAME = "📅 Calendar_Sync";
+var DB_EDIT_NAME = "👤 Human_Edits";
+
+var NEW_BOOKING_WEBHOOKS = {
+  'opskyc':          'https://hooks.slack.com/triggers/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', 
+  'operationkyc':    'https://hooks.slack.com/triggers/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',
+  'verification-kyc':'https://hooks.slack.com/triggers/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',
+  'opsverification': 'https://hooks.slack.com/triggers/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',
+  'opsmule':         'https://hooks.slack.com/triggers/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'
+};
+
+var REMINDER_WEBHOOKS = {
+  'opskyc':          'https://hooks.slack.com/triggers/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',
+  'operationkyc':    'https://hooks.slack.com/triggers/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',
+  'verification-kyc':'',
+  'opsverification': '',
+  'opsmule':         ''
+};
+
+var TEAM_SHEET_MAPPING = {
+  'opskyc':          'Request for EDD Email (KYC Risk)',
+  'operationkyc':    'Request for EDD Email (KYC)',
+  'verification-kyc':'Request for EDD Email (Mule)',
+  'opsverification': 'Request for EDD Email (OPS)',
+  'opsmule':         'Request for EDD Email (Mule)'
+};
+
+var EMAIL_MAP = {
+  'opskyc':          'opskyc@bitkub.com',
+  'operationkyc':    'operationkyc@bitkub.com',
+  'verification-kyc':'verification-kyc@bitkub.com',
+  'opsverification': 'opsverification@bitkub.com',
+  'opsmule':         'c_3b4cd67b1b2a3103729c2c528f2275e891bff9a0d96f217618b010f7c83c4c21@group.calendar.google.com'
+};
+
+var TEAM_DISPLAY_MAP = {
+  'opskyc':          'OPSKYC (KYC Risk)',
+  'operationkyc':    'OPERATIONKYC (KYC)',
+  'verification-kyc':'VERIFICATION-KYC (Mule)',
+  'opsverification': 'OPSVERIFICATION (OPS)',
+  'opsmule':         'OPS MULE (Mule)'
+};
+
+// =======================================================
+// HELPER FUNCTIONS
+// =======================================================
+function detectLanguage(title, description) {
+  var fullText = (String(title) + " " + String(description)).toLowerCase();
+  if (fullText.indexOf('english') !== -1 || fullText.indexOf('eng') !== -1 || fullText.indexOf('[eng]') !== -1) { return "English"; }
+  return "Thai";
+}
+
+function sendSlackMessage(webhookUrl, textMsg) {
+  if (!webhookUrl) return;
+  try { UrlFetchApp.fetch(webhookUrl, { "method": "post", "contentType": "application/json", "payload": JSON.stringify({ "text": textMsg }), "muteHttpExceptions": true }); } catch(e) {}
+}
+
+// 🚀 แก้ไข: สกัดลิงก์โดยให้ Priority Google Meet ก่อน
+function extractMeetLink(location, description, conferenceData) {
+  var loc  = location || '';
+  var desc = description || '';
+  
+  // 1. Google Meet แท้
+  if (conferenceData && conferenceData.entryPoints) {
+    for (var i = 0; i < conferenceData.entryPoints.length; i++) {
+      if (conferenceData.entryPoints[i].entryPointType === 'video' && conferenceData.entryPoints[i].uri) {
+        return conferenceData.entryPoints[i].uri;
+      }
+    }
+  }
+  // 2. ลิงก์ Meet ในข้อความ
+  var fallback = (loc + ' ' + desc).match(/(https:\/\/)?meet\.google\.com\/[a-z0-9-]+/i);
+  if (fallback) return fallback[0].startsWith('http') ? fallback[0] : 'https://' + fallback[0];
+  
+  // 3. YouCanBook.me
+  var ycbm = (loc + ' ' + desc).match(/https:\/\/book\.youcanbook\.me\/google-meet\/[A-Za-z0-9_-]+/i);
+  if (ycbm) return ycbm[0];
+  
+  return '';
+}
+
+// =======================================================
+// 🛡️ TEAM ACCESS MANAGEMENT
+// =======================================================
+function getTeamSheet() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName("🛡️ Team_Access");
+  if (!sheet) {
+    sheet = ss.insertSheet("🛡️ Team_Access");
+    sheet.appendRow(["Email", "Name", "Role", "AssignedTeam"]);
+    sheet.getRange(1, 1, 1, 4).setFontWeight("bold").setBackground("#f3f4f6");
+    var currentUserEmail = Session.getActiveUser().getEmail() || "";
+    sheet.appendRow([currentUserEmail, currentUserEmail.split('@')[0], "Admin", "all"]);
+  }
+  return sheet;
+}
+
+function getLogSheet() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName("📋 Team_Access_Logs");
+  if (!sheet) {
+    sheet = ss.insertSheet("📋 Team_Access_Logs");
+    sheet.appendRow(["Timestamp", "Admin Email", "Action", "Target Email", "Details"]);
+    sheet.getRange(1, 1, 1, 5).setFontWeight("bold").setBackground("#f3f4f6");
+  }
+  return sheet;
+}
+
+function getSystemSettings() {
+  try {
+    var currentUserEmail = Session.getActiveUser().getEmail() || "";
+    var isBitkubUser = currentUserEmail.toLowerCase().endsWith('@bitkub.com') || currentUserEmail === "";
+    var sheet = getTeamSheet();
+    var data = sheet.getDataRange().getValues();
+    var teamDatabase = {};
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][0]) teamDatabase[String(data[i][0]).toLowerCase()] = { name: data[i][1], role: data[i][2], assignedTeam: data[i][3] };
+    }
+    if (Object.keys(teamDatabase).length === 0) {
+      var props = PropertiesService.getScriptProperties();
+      teamDatabase = props.getProperty("EDD_TEAM_DATABASE") ? JSON.parse(props.getProperty("EDD_TEAM_DATABASE")) : {};
+    }
+    var currentRole = "Viewer", userAssignedTeam = "none";
+    var userKey = currentUserEmail.toLowerCase();
+    if (teamDatabase[userKey]) {
+      currentRole = teamDatabase[userKey].role;
+      userAssignedTeam = teamDatabase[userKey].assignedTeam || "none";
+    } else if (currentUserEmail === "") {
+      currentRole = "Admin"; userAssignedTeam = "all";
+      teamDatabase["admin"] = { role: "Admin", name: "Admin", assignedTeam: "all" };
+    }
+    return { success: true, currentUserEmail: currentUserEmail, currentRole: currentRole, userAssignedTeam: userAssignedTeam, teamDatabase: teamDatabase, isBitkubUser: isBitkubUser };
+  } catch(e) { return { success: false, error: e.toString() }; }
+}
+
+function saveTeamDatabase(newTeamDbObj) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var currentUserEmail = Session.getActiveUser().getEmail() || "System Admin";
+    var sheet = getTeamSheet(), logSheet = getLogSheet();
+    var oldData = sheet.getDataRange().getValues(), oldDb = {};
+    for (var i = 1; i < oldData.length; i++) {
+      if (oldData[i][0]) oldDb[String(oldData[i][0]).toLowerCase()] = { name: oldData[i][1], role: oldData[i][2], assignedTeam: oldData[i][3] };
+    }
+    sheet.clear();
+    sheet.appendRow(["Email", "Name", "Role", "AssignedTeam"]);
+    sheet.getRange(1, 1, 1, 4).setFontWeight("bold").setBackground("#f3f4f6");
+    var timestamp = Utilities.formatDate(new Date(), "GMT+7", "dd-MMM-yyyy HH:mm:ss");
+    var rowsToAppend = [];
+    for (var email in newTeamDbObj) {
+      var member = newTeamDbObj[email];
+      rowsToAppend.push([email, member.name, member.role, member.assignedTeam]);
+      var oldMember = oldDb[email];
+      if (!oldMember) { logSheet.appendRow([timestamp, currentUserEmail, "ADD USER", email, "Role: " + member.role + " | Queue: " + member.assignedTeam]); } 
+      else if (oldMember.role !== member.role || oldMember.assignedTeam !== member.assignedTeam) { logSheet.appendRow([timestamp, currentUserEmail, "UPDATE USER", email, "Changed to Role: " + member.role + " | Queue: " + member.assignedTeam]); }
+    }
+    if (rowsToAppend.length > 0) sheet.getRange(2, 1, rowsToAppend.length, 4).setValues(rowsToAppend);
+    for (var oldEmail in oldDb) {
+      if (!newTeamDbObj[oldEmail]) logSheet.appendRow([timestamp, currentUserEmail, "DELETE USER", oldEmail, "Removed from system"]);
+    }
+    PropertiesService.getScriptProperties().setProperty("EDD_TEAM_DATABASE", JSON.stringify(newTeamDbObj));
+    return { success: true };
+  } catch(e) { return { success: false, error: e.toString() }; } finally { lock.releaseLock(); }
+}
+
+function getSheetLookupDatabase() {
+  var lookupMap = { 'opskyc': {}, 'operationkyc': {}, 'verification-kyc': {}, 'opsverification': {}, 'opsmule': {} };
+  try {
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    for (var ownerKey in TEAM_SHEET_MAPPING) {
+      var sheet = ss.getSheetByName(TEAM_SHEET_MAPPING[ownerKey]);
+      if (!sheet) continue;
+      var rangeValues = sheet.getDataRange().getValues();
+      if (rangeValues.length < 2) continue;
+      var headers = rangeValues[0], emailIdx = -1, uidIdx = -1, typeIdx = -1;
+      for (var j = 0; j < headers.length; j++) {
+        var hName = String(headers[j]).trim().toLowerCase();
+        if (hName.indexOf("email") !== -1) emailIdx = j;
+        if (hName.indexOf("uid")   !== -1) uidIdx   = j;
+        if (hName.indexOf("type")  !== -1) typeIdx  = j;
+      }
+      for (var k = 1; k < rangeValues.length; k++) {
+        var row = rangeValues[k];
+        if (!row || emailIdx === -1) continue;
+        var emailKey = row[emailIdx] ? String(row[emailIdx]).trim().toLowerCase() : "";
+        if (emailKey) {
+          lookupMap[ownerKey][emailKey] = {
+            uid:     (uidIdx  !== -1 && row[uidIdx])  ? String(row[uidIdx]).trim()  : "-",
+            eddType: (typeIdx !== -1 && row[typeIdx]) ? String(row[typeIdx]).trim() : "Unknown"
+          };
+        }
+      }
+    }
+  } catch(e) { }
+  return lookupMap;
+}
+
+// =======================================================
+// 🌐 THE MAGIC: เย็บ 2 ตารางติดกัน
+// =======================================================
+function getMasterCombinedCalendarData(startDateStr, endDateStr) {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var syncSheet = ss.getSheetByName(DB_SYNC_NAME);
+  var editSheet = ss.getSheetByName(DB_EDIT_NAME);
+  if (!syncSheet || !editSheet) return [];
+
+  var syncData = syncSheet.getDataRange().getDisplayValues();
+  var editData = editSheet.getDataRange().getDisplayValues();
+
+  var editsMap = {};
+  for (var j = 1; j < editData.length; j++) {
+    if (editData[j][0]) {
+      editsMap[editData[j][0]] = { uid: editData[j][1], status: editData[j][2], notes: editData[j][3], officer: editData[j][4], eddType: editData[j][5] };
+    }
+  }
+
+  var eventsList = [];
+  var monthsMap = {'Jan':'01','Feb':'02','Mar':'03','Apr':'04','May':'05','Jun':'06','Jul':'07','Aug':'08','Sep':'09','Oct':'10','Nov':'11','Dec':'12'};
+  var startNum = startDateStr ? parseInt(startDateStr.replace(/-/g, ""), 10) : null;
+  var endNum   = endDateStr   ? parseInt(endDateStr.replace(/-/g, ""),   10) : startNum;
+
+  for (var i = 1; i < syncData.length; i++) {
+    var row = syncData[i];
+    var id = row[0];
+    if (!id) continue;
+
+    var customerEmail = String(row[2] || "").trim();
+    var eData = editsMap[id] || {};
+    var status = eData.status || "Need check";
+    
+    if (status === "Deleted") continue; 
+
+    var dateClean = String(row[4]).replace(/'/g, "");
+    var parts = dateClean.split('-');
+    if (parts.length === 3) {
+      var rowNum = parseInt(parts[2] + (monthsMap[parts[1]] || "01") + parts[0].padStart(2,'0'), 10);
+      if (startNum && (rowNum < startNum || rowNum > endNum)) continue;
+    }
+
+    eventsList.push({
+      id: id, title: row[1], uid: eData.uid || "-", customerEmail: customerEmail, language: row[3], dateStr: dateClean,
+      dayOfWeek: String(row[5]).replace(/'/g, ""), startTime: String(row[6]).replace(/'/g, ""), endTime: String(row[7]).replace(/'/g, ""),
+      owner: row[8], meetLink: row[9], status: status, notes: eData.notes || "", officer: eData.officer || "", eddType: eData.eddType || "Unknown"
+    });
+  }
+  return eventsList;
+}
+
+// =======================================================
+// ✅ BULLETPROOF SAVE
+// =======================================================
+function saveToGoogleCalendar(ownerName, eventId, status, notes, officer, uid, eddType, customerEmail) {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(15000)) return { success: false, error: "System is busy, please try saving again." };
+  try {
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var editSheet = ss.getSheetByName(DB_EDIT_NAME);
+    var data = editSheet.getDataRange().getValues();
+    var found = false;
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(eventId)) {
+        editSheet.getRange(i+1, 2, 1, 5).setValues([[uid, status, notes, officer, eddType]]);
+        found = true; break;
+      }
+    }
+    if (!found) editSheet.appendRow([eventId, uid, status, notes, officer, eddType, ""]);
+
+    try {
+      var targetSheetName = TEAM_SHEET_MAPPING[ownerName];
+      if (targetSheetName) {
+        var mainSheet = ss.getSheetByName(targetSheetName);
+        if (mainSheet) {
+          var mainData = mainSheet.getDataRange().getValues();
+          var headers = mainData[0];
+          var emailIdx = -1, uidIdx2 = -1, typeIdx2 = -1;
+          for (var j = 0; j < headers.length; j++) {
+            var hName = String(headers[j]).trim().toLowerCase();
+            if (hName.indexOf("email") !== -1) emailIdx = j;
+            if (hName.indexOf("uid") !== -1) uidIdx2 = j;
+            if (hName.indexOf("type") !== -1) typeIdx2 = j;
+          }
+          if (emailIdx !== -1) {
+            for (var k = 1; k < mainData.length; k++) {
+              if (String(mainData[k][emailIdx]).trim().toLowerCase() === String(customerEmail).trim().toLowerCase()) {
+                if (uidIdx2 !== -1) mainSheet.getRange(k+1, uidIdx2+1).setValue(uid);
+                if (typeIdx2 !== -1) mainSheet.getRange(k+1, typeIdx2+1).setValue(eddType);
+                break;
+              }
+            }
+          }
+        }
+      }
+    } catch(sheetErr) { }
+
+    SpreadsheetApp.flush();
+
+    var calendarId = EMAIL_MAP[ownerName];
+    if (calendarId) {
+      var safeStatus = String(status).trim().toLowerCase();
+      if (safeStatus === "cancelled") {
+        try { Calendar.Events.remove(calendarId, eventId); } catch(delErr) { Logger.log("Delete error: " + delErr); }
+      } else if (safeStatus !== "blocked slot") {
+        try {
+          var cal = CalendarApp.getCalendarById(calendarId);
+          if (cal) {
+            var event = cal.getEventById(eventId);
+            if (event) {
+              var currentDesc = event.getDescription() || "";
+              currentDesc = currentDesc.replace(/\[EDD_STATUS:\s*[^\]]+\]/g,"").replace(/\[EDD_NOTES:\s*[^\]]+\]/g,"").replace(/\[EDD_OFFICER:\s*[^\]]+\]/g,"").trim();
+              var editorEmail = Session.getActiveUser().getEmail() || "Ops Command Station";
+              var timestamp = Utilities.formatDate(new Date(), "GMT+7", "dd-MMM-yyyy HH:mm:ss");
+              currentDesc += "\n\n[Edit Log - " + timestamp + " by " + editorEmail + "]\n   Assigned Officer: " + (officer||"Unassigned") + "\n   Status updated: " + status + "\n   UID Associated: " + uid + "\n   EDD Type Categorized: " + eddType + "\n   Operational Note: " + (notes||"-") + "\n\n[EDD_STATUS: " + status + "]\n[EDD_NOTES: " + (notes||"") + "]\n[EDD_OFFICER: " + (officer||"") + "]";
+              event.setDescription(currentDesc);
+              var colorMap = { "EDD Done": CalendarApp.EventColor.GREEN, "EDD Not done": CalendarApp.EventColor.RED, "Need check": CalendarApp.EventColor.YELLOW, "Transferred": CalendarApp.EventColor.MAUVE };
+              if (colorMap[status]) event.setColor(colorMap[status]);
+            }
+          }
+        } catch(calErr) {}
+      }
+    }
+    return { success: true };
+  } catch(e) { return { success: false, error: e.toString() }; } finally { lock.releaseLock(); }
+}
+
+// =======================================================
+// ✅ TRANSFER
+// =======================================================
+function executeSlotTunnelTransfer(sourceOwner, eventId, targetOwner, targetDateStr, targetStartTime, targetEndTime) {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(15000)) return { success: false, error: "System is busy, please try again." };
+  try {
+    var sourceCalId = EMAIL_MAP[sourceOwner], targetCalId = EMAIL_MAP[targetOwner];
+    if (!sourceCalId || !targetCalId) throw new Error("Invalid calendar references.");
+
+    var originalEvent = Calendar.Events.get(sourceCalId, eventId);
+    var startIso = targetDateStr + "T" + targetStartTime + ":00+07:00";
+    var endIso   = targetDateStr + "T" + targetEndTime   + ":00+07:00";
+
+    var baseDescription = (originalEvent.description || "").replace(/\[EDD_STATUS:\s*[^\]]+\]/g,"").replace(/\[EDD_NOTES:\s*[^\]]+\]/g,"").replace(/\[EDD_OFFICER:\s*[^\]]+\]/g,"").trim();
+    var timestamp     = Utilities.formatDate(new Date(), "GMT+7", "dd-MMM-yyyy HH:mm:ss");
+    var operatorEmail = Session.getActiveUser().getEmail() || "Ops Center";
+
+    if (baseDescription.indexOf("[EDD_STATUS: Transferred]") !== -1) {
+      return { success: false, error: "This slot was already transferred." };
+    }
+
+    var clonedDescription = baseDescription + "\n\n[Edit Log - " + timestamp + " by " + operatorEmail + "]\n   Action: Transferred in from " + sourceOwner.toUpperCase() + "\n   Status updated: Need check\n\n[EDD_STATUS: Need check]\n[EDD_NOTES: ]\n[EDD_OFFICER: ]";
+    var spawnedEvent = Calendar.Events.insert({
+      summary: originalEvent.summary, location: originalEvent.location, description: clonedDescription,
+      start: { dateTime: startIso, timeZone: "Asia/Bangkok" }, end: { dateTime: endIso, timeZone: "Asia/Bangkok" },
+      conferenceData: originalEvent.conferenceData
+    }, targetCalId, { conferenceDataVersion: 1 });
+
+    var patchedDesc = baseDescription + "\n\n[Edit Log - " + timestamp + " by " + operatorEmail + "]\n   Action: Transferred out to " + targetOwner.toUpperCase() + "\n   Status updated: Transferred\n\n[EDD_STATUS: Transferred]";
+    
+    var srcCal = CalendarApp.getCalendarById(sourceCalId);
+    if (srcCal) { var srcEvt = srcCal.getEventById(eventId); if (srcEvt) { srcEvt.setDescription(patchedDesc); srcEvt.setColor(CalendarApp.EventColor.GRAY); } }
+    try { Calendar.Events.patch({ transparency: 'transparent' }, sourceCalId, eventId); } catch(patchErr) {}
+
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var syncSheet = ss.getSheetByName(DB_SYNC_NAME);
+    var editSheet = ss.getSheetByName(DB_EDIT_NAME);
+
+    var eData = editSheet.getDataRange().getValues();
+    var foundE = false;
+    for (var r = 1; r < eData.length; r++) {
+      if (String(eData[r][0]) === String(eventId)) {
+        editSheet.getRange(r+1, 3).setValue("Transferred");
+        foundE = true; break;
+      }
+    }
+    if (!foundE) editSheet.appendRow([eventId, "-", "Transferred", "", "", "Unknown", ""]);
+
+    var dp = targetDateStr.split('-');
+    var monthsAbbr = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var remappedDateStr = "'" + dp[2] + "-" + monthsAbbr[parseInt(dp[1],10)-1] + "-" + dp[0];
+    
+    var emailMatchArr = (String(originalEvent.summary) + " " + baseDescription).match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    var customerEmail = emailMatchArr ? emailMatchArr[0].trim() : "-";
+    var targetDayOfWeek = "'" + ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(startIso).getDay()];
+    var finalLanguage = detectLanguage(originalEvent.summary, baseDescription);
+    var newMeetLink = extractMeetLink(originalEvent.location || '', baseDescription, originalEvent.conferenceData);
+    
+    syncSheet.appendRow([spawnedEvent.id, originalEvent.summary, customerEmail, finalLanguage, remappedDateStr, targetDayOfWeek, "'" + targetStartTime, "'" + targetEndTime, targetOwner, newMeetLink, "Yes"]);
+    editSheet.appendRow([spawnedEvent.id, "-", "Need check", "", "", "Transfer from " + sourceOwner.toUpperCase(), ""]);
+    SpreadsheetApp.flush();
+
+    var safeTargetOwner = String(targetOwner).toLowerCase().trim();
+    var safeSourceOwner = String(sourceOwner).toLowerCase().trim();
+    var targetWebhook = NEW_BOOKING_WEBHOOKS[safeTargetOwner];
+    if (targetWebhook) {
+      var sourceDisplayName = TEAM_DISPLAY_MAP[safeSourceOwner] || safeSourceOwner.toUpperCase();
+      var targetDisplayName = TEAM_DISPLAY_MAP[safeTargetOwner] || safeTargetOwner.toUpperCase();
+      var transferMsg = "🔄 *NEW Slot has been transferred to your team*\n• From: " + sourceDisplayName + "\n• To: " + targetDisplayName + "\n• Date: " + remappedDateStr.replace("'","") + "\n• Time: " + targetStartTime + " น.\n⚠️ Please kindly recheck ⚠️";
+      sendSlackMessage(targetWebhook, transferMsg);
+    }
+    return { success: true };
+  } catch(err) { return { success: false, error: err.toString() }; } finally { lock.releaseLock(); }
+}
+
+// =======================================================
+// 🛑 BACKGROUND SYNC
+// =======================================================
+function checkNewEventsAndNotifySlack() {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return;
+  try {
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var syncSheet = ss.getSheetByName(DB_SYNC_NAME);
+    var editSheet = ss.getSheetByName(DB_EDIT_NAME);
+    if (!syncSheet || !editSheet) return;
+
+    var now = new Date();
+    var startTime = new Date(now.getTime() - (2  * 24 * 60 * 60 * 1000));
+    var endTime   = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+
+    var syncData = syncSheet.getDataRange().getDisplayValues();
+    var idMap = {};
+    for (var i = 1; i < syncData.length; i++) { if (syncData[i][0]) idMap[String(syncData[i][0])] = true; }
+
+    var editData = editSheet.getDataRange().getValues();
+    var editRowMap = {};
+    for (var e = 1; e < editData.length; e++) { if (editData[e][0]) editRowMap[String(editData[e][0])] = e + 1; }
+
+    var newBookingsFound = [];
+
+    for (var ownerName in EMAIL_MAP) {
+      try {
+        var response = Calendar.Events.list(EMAIL_MAP[ownerName], { timeMin: startTime.toISOString(), timeMax: endTime.toISOString(), singleEvents: true, showDeleted: true, maxResults: 500 });
+        var items = response.items;
+        if (!items || items.length === 0) continue;
+
+        items.forEach(function(apiEvent) {
+          var id = String(apiEvent.id);
+
+          if (apiEvent.status === 'cancelled') {
+            if (editRowMap[id]) {
+               if (editData[editRowMap[id]-1][2] !== 'Cancelled') { editSheet.getRange(editRowMap[id], 3).setValue('Cancelled'); editData[editRowMap[id]-1][2] = 'Cancelled'; }
+            } else {
+               editSheet.appendRow([id, "-", "Cancelled", "", "", "Unknown", ""]);
+               editRowMap[id] = editSheet.getLastRow();
+            }
+            return;
+          }
+
+          if (idMap[id]) return;
+
+          var title = apiEvent.summary || "No Title";
+          var description = apiEvent.description || '';
+          var location = apiEvent.location || '';
+          
+          var emailMatchArr = (title + ' ' + description).match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+          var customerEmail = emailMatchArr ? emailMatchArr[0].trim() : "-";
+          
+          if (!apiEvent.start || (!apiEvent.start.dateTime && !apiEvent.start.date)) return;
+          var startSec = apiEvent.start.dateTime ? new Date(apiEvent.start.dateTime) : new Date(apiEvent.start.date + "T00:00:00+07:00");
+          var endSec   = apiEvent.end.dateTime   ? new Date(apiEvent.end.dateTime)   : new Date(apiEvent.end.date   + "T23:59:59+07:00");
+          var isAllDay = !apiEvent.start.dateTime;
+          
+          var language = detectLanguage(title, description);
+          var meetLink = extractMeetLink(location, description, apiEvent.conferenceData);
+          
+          var dateStr = "'" + Utilities.formatDate(startSec, "GMT+7", "dd-MMM-yyyy");
+          var dayStr  = "'" + Utilities.formatDate(startSec, "GMT+7", "E");
+          var startTimeStr = "'" + (isAllDay ? "00:00" : Utilities.formatDate(startSec, "GMT+7", "HH:mm"));
+          var endTimeStr   = "'" + (isAllDay ? "23:59" : Utilities.formatDate(endSec,   "GMT+7", "HH:mm"));
+          
+          syncSheet.appendRow([id, title, customerEmail, language, dateStr, dayStr, startTimeStr, endTimeStr, ownerName, meetLink, "Yes"]);
+          idMap[id] = true;
+
+          var isTransferEvent = description.match(/Action:\s*Transferred\s*in\s*from\s*([a-zA-Z0-9_-]+)/i);
+          if (!isTransferEvent && customerEmail !== "-") {
+             newBookingsFound.push({ date: dateStr.replace("'",""), time: startTimeStr.replace("'",""), team: ownerName });
+          }
+          if (customerEmail === "-") {
+             editSheet.appendRow([id, "-", "Blocked slot", "", "", "Blocked slot", ""]);
+             editRowMap[id] = editSheet.getLastRow();
+          }
+        });
+      } catch(err) { }
+    }
+    SpreadsheetApp.flush();
+    if (newBookingsFound.length > 0) executeSlackNewBookingPost(newBookingsFound);
+  } catch(e) { } finally { lock.releaseLock(); }
+}
+
+function executeSlackNewBookingPost(newBookings) {
+  if (!newBookings || newBookings.length === 0) return;
+  newBookings.forEach(function(booking) {
+    var ownerLower    = String(booking.team || "").toLowerCase().trim();
+    var targetWebhook = NEW_BOOKING_WEBHOOKS[ownerLower];
+    if (!targetWebhook) return;
+    var displayName = TEAM_DISPLAY_MAP[ownerLower] || ownerLower.toUpperCase();
+    var msg = "🚨 *New EDD booking received* 🚨\n• Date: *" + booking.date + "*\n• Time: *" + booking.time + " น.*\n• Team: *" + displayName + "*";
+    sendSlackMessage(targetWebhook, msg);
+    Utilities.sleep(1500); 
+  });
+}
+
+// =======================================================
+// ⏰ 30 MIN REMINDERS
+// =======================================================
+function send30MinReminders() {
+  var events = getMasterCombinedCalendarData(null, null);
+  if (events.length === 0) return;
+  
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var editSheet = ss.getSheetByName(DB_EDIT_NAME);
+  if (!editSheet) return;
+  
+  var editData = editSheet.getDataRange().getValues();
+  var editRowMap = {};
+  for(var e=1; e<editData.length; e++){ if(editData[e][0]) editRowMap[String(editData[e][0])] = e + 1; }
+
+  var now = new Date();
+  var monthsMap = {'Jan':0,'Feb':1,'Mar':2,'Apr':3,'May':4,'Jun':5,'Jul':6,'Aug':7,'Sep':8,'Oct':9,'Nov':10,'Dec':11};
+
+  events.forEach(function(ev) {
+    if (ev.status === "Cancelled" || ev.status === "Transferred" || ev.status === "EDD Done" || ev.status === "Blocked slot") return;
+    var rowIdx = editRowMap[ev.id];
+    var reminderSent = rowIdx ? editData[rowIdx-1][6] : "";
+    if (reminderSent === "Yes") return;
+
+    var ownerLower = ev.owner.toLowerCase().trim();
+    var targetWebhook = REMINDER_WEBHOOKS[ownerLower];
+    if (!targetWebhook) return;
+
+    var dParts = ev.dateStr.split('-');
+    var tParts = ev.startTime.split(':');
+    if (dParts.length !== 3 || tParts.length !== 2) return;
+
+    var eventDate = new Date(parseInt(dParts[2],10), monthsMap[dParts[1]], parseInt(dParts[0],10), parseInt(tParts[0],10), parseInt(tParts[1],10), 0);
+    var diffMins = (eventDate.getTime() - now.getTime()) / (1000 * 60);
+
+    if (diffMins >= 25 && diffMins <= 35) {
+      var msg = "⏰ *[Reminder] EDD slot starting in 30 minutes*\n• Date: " + ev.dateStr + "\n• Time: " + ev.startTime + "\n• Team: " + (TEAM_DISPLAY_MAP[ownerLower] || ownerLower.toUpperCase());
+      sendSlackMessage(targetWebhook, msg);
+      if (rowIdx) { editSheet.getRange(rowIdx, 7).setValue("Yes"); } 
+      else { editSheet.appendRow([ev.id, ev.uid, ev.status, ev.notes, ev.officer, ev.eddType, "Yes"]); editRowMap[ev.id] = editSheet.getLastRow(); }
+    }
+  });
+}
+
+// =======================================================
+// 🔍 ANALYTICS & AUDIT 
+// =======================================================
+function getEventAuditLog(ownerName, eventId) {
+  try {
+    var calendarId = EMAIL_MAP[ownerName];
+    if (!calendarId) return { success: false, logs: [], error: "No calendar ID found for owner: " + ownerName };
+    var cal = CalendarApp.getCalendarById(calendarId);
+    if (!cal) return { success: false, logs: [], error: "Calendar not accessible via CalendarApp" };
+    var event = cal.getEventById(eventId);
+    if (!event) return { success: false, logs: [], error: "Event not found: " + eventId };
+    var desc = event.getDescription() || "";
+    var logPattern = /\[Edit Log - ([^\]]+)\]([\s\S]*?)(?=\[Edit Log -|\[EDD_STATUS:|$)/g;
+    var logs = [], match;
+    while ((match = logPattern.exec(desc)) !== null) {
+      logs.push({ timestamp: match[1].replace(/📌/g,'').trim(), detail: match[2].replace(/={3,}/g,'').replace(/📌/g,'').trim() });
+    }
+    return { success: true, logs: logs };
+  } catch(e) { return { success: false, logs: [], error: e.toString() }; }
+}
+
+function getRangeAnalyticsData(startDateStr, endDateStr) {
+  var data = getMasterCombinedCalendarData(startDateStr, endDateStr);
+  var byDate = {}, byOwner = {}, byStatus = {}, byType = {}, byLanguage = {}, byOfficer = {}, byDayOfWeek = {};
+  data.forEach(function(r) {
+    byDate[r.dateStr]                    = (byDate[r.dateStr]                    || 0) + 1;
+    byOwner[r.owner]                     = (byOwner[r.owner]                     || 0) + 1;
+    byStatus[r.status    || "Need check"]= (byStatus[r.status    || "Need check"]|| 0) + 1;
+    byType[r.eddType     || "Unknown"]   = (byType[r.eddType     || "Unknown"]   || 0) + 1;
+    byLanguage[r.language|| "Thai"]      = (byLanguage[r.language|| "Thai"]      || 0) + 1;
+    byOfficer[r.officer  || "Unassigned"]= (byOfficer[r.officer  || "Unassigned"]|| 0) + 1;
+    byDayOfWeek[r.dayOfWeek || "?"]      = (byDayOfWeek[r.dayOfWeek || "?"]     || 0) + 1;
+  });
+  var totalActive    = data.filter(function(r){ return r.status !== "Cancelled" && r.status !== "Transferred" && r.status !== "Blocked slot"; }).length;
+  var doneCount      = byStatus["EDD Done"]    || 0;
+  var notDoneCount   = byStatus["EDD Not done"]|| 0;
+  var needCheckCount = byStatus["Need check"]  || 0;
+  return { total: data.length, totalActive: totalActive, byDate: byDate, byOwner: byOwner, byStatus: byStatus, byType: byType, byLanguage: byLanguage, byOfficer: byOfficer, byDayOfWeek: byDayOfWeek, completionRate: totalActive > 0 ? Math.round((doneCount/totalActive)*100) : 0, slaBreachRate:  totalActive > 0 ? Math.round((needCheckCount/totalActive)*100) : 0, doneCount: doneCount, notDoneCount: notDoneCount, needCheckCount: needCheckCount };
+}
+
+// =======================================================
+// 🧹 REBUILD SYNC SHEET (ซ่อมตาราง / ดึงลิงก์ Meet แท้)
+// =======================================================
+function REBUILD_SYNC_SHEET() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var syncSheet = ss.getSheetByName(DB_SYNC_NAME);
+  if (!syncSheet) return "Error: Sync sheet not found";
+
+  var lastRow = syncSheet.getLastRow();
+  if (lastRow > 1) { syncSheet.getRange(2, 1, lastRow - 1, 11).clearContent(); }
+
+  var timeMinStr = new Date(2026,0,1,0,0,0).toISOString();
+  var timeMaxStr = new Date(2027,11,31,23,59,59).toISOString();
+  var rowsToAppend = [], seenIds = {};
+
+  for (var ownerName in EMAIL_MAP) {
+    try {
+      var response = Calendar.Events.list(EMAIL_MAP[ownerName], { timeMin: timeMinStr, timeMax: timeMaxStr, singleEvents: true, showDeleted: false, maxResults: 2500 });
+      var items = response.items;
+      if (!items || items.length === 0) continue;
+
+      items.forEach(function(apiEvent) {
+        var id = String(apiEvent.id);
+        if (seenIds[id] || apiEvent.status === 'cancelled') return;
+
+        var title = apiEvent.summary || "No Title", desc = apiEvent.description || "", loc = apiEvent.location || "";
+        var emailMatchArr = (title+' '+desc).match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+        var customerEmail = emailMatchArr ? emailMatchArr[0].trim() : "-";
+        
+        seenIds[id] = true;
+
+        if (!apiEvent.start || (!apiEvent.start.dateTime && !apiEvent.start.date)) return;
+        var startSec = apiEvent.start.dateTime ? new Date(apiEvent.start.dateTime) : new Date(apiEvent.start.date+"T00:00:00+07:00");
+        var endSec   = apiEvent.end.dateTime   ? new Date(apiEvent.end.dateTime)   : new Date(apiEvent.end.date+"T23:59:59+07:00");
+        var isAllDay = !apiEvent.start.dateTime;
+
+        var dateStr      = "'" + Utilities.formatDate(startSec, "GMT+7", "dd-MMM-yyyy");
+        var dayStr       = "'" + Utilities.formatDate(startSec, "GMT+7", "E");
+        var startTimeStr = "'" + (isAllDay ? "00:00" : Utilities.formatDate(startSec, "GMT+7", "HH:mm"));
+        var endTimeStr   = "'" + (isAllDay ? "23:59" : Utilities.formatDate(endSec,   "GMT+7", "HH:mm"));
+        
+        var language = detectLanguage(title, desc);
+        var meetLink = extractMeetLink(loc, desc, apiEvent.conferenceData);
+        
+        rowsToAppend.push([id, title, customerEmail, language, dateStr, dayStr, startTimeStr, endTimeStr, ownerName, meetLink, "Yes"]);
+      });
+    } catch(e) { }
+  }
+
+  if (rowsToAppend.length > 0) {
+    var monthsMap = {'Jan':'01','Feb':'02','Mar':'03','Apr':'04','May':'05','Jun':'06','Jul':'07','Aug':'08','Sep':'09','Oct':'10','Nov':'11','Dec':'12'};
+    rowsToAppend.sort(function(a,b){
+      var pA=a[4].replace("'","").split('-'), pB=b[4].replace("'","").split('-');
+      var nA=parseInt(pA[2]+(monthsMap[pA[1]]||"01")+pA[0].padStart(2,'0')+a[6].replace(/[':]/g,""),10);
+      var nB=parseInt(pB[2]+(monthsMap[pB[1]]||"01")+pB[0].padStart(2,'0')+b[6].replace(/[':]/g,""),10);
+      return nA-nB;
+    });
+    syncSheet.getRange(2, 1, rowsToAppend.length, 11).setValues(rowsToAppend);
+  }
+  return "SUCCESS: Rebuilt Sync Sheet with " + rowsToAppend.length + " events.";
+}
+
+// =======================================================
+// 🔧 DEBUG TOOLS (ห้ามตัดออก)
+// =======================================================
+function debugTestSlackAllWebhooks() {
+  var timestamp = Utilities.formatDate(new Date(), "GMT+7", "dd-MMM-yyyy HH:mm:ss");
+  for (var team in NEW_BOOKING_WEBHOOKS) { sendSlackMessage(NEW_BOOKING_WEBHOOKS[team], "🧪 [TEST " + timestamp + "] Webhook test: " + team); }
+}
+function debugTestOpsMuleCalendarAccess() {
+  try { Calendar.Events.list(EMAIL_MAP['opsmule'], { maxResults: 1 }); Logger.log("✅ OK"); } catch(e) { Logger.log("❌ Failed: " + e.toString()); }
+}
+function debugResetNotifiedList() { PropertiesService.getScriptProperties().setProperty("SLACK_NOTIFIED_EVENT_IDS", JSON.stringify([])); }
+function debugShowNotifiedList() { Logger.log(PropertiesService.getScriptProperties().getProperty("SLACK_NOTIFIED_EVENT_IDS")); }
+function debugCheckWhatWouldNotify() { Logger.log("Checking would notify..."); }
+function MIGRATE_TO_NEW_DB_STRUCTURE() { Logger.log("Already migrated. Use REBUILD_SYNC_SHEET to fix issues."); }
